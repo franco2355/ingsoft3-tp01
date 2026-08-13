@@ -1,4 +1,4 @@
-# Proyecto IngSoft3 - versión A
+# Proyecto IngSoft3 - versión B
 
 Trabajo Práctico 01 de Ingeniería del Software 3.
 
