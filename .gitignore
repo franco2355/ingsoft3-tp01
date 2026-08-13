@@ -1,7 +1,22 @@
-  node_modules/
-  bin/
-  obj/
-  dist/
-  build/
-  .env
-  *.local
+# Dependencias descargadas de Node.js.
+node_modules/
+
+# Resultados y archivos temporales de compilación.
+bin/
+obj/
+dist/
+build/
+
+# Secretos y configuraciones locales.
+.env
+*.local
+
+# Archivos generados por los sistemas operativos.
+.DS_Store
+Thumbs.db
+
+# Configuraciones personales de los editores.
+.vscode/
+.idea/
+
+
