@@ -1,4 +1,4 @@
-# ingsoft3-tp01
+# Proyecto IngSoft3 - versión B
 
 Trabajo Práctico 01 de Ingeniería del Software 3.
 
