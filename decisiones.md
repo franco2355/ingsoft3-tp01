@@ -22,40 +22,26 @@ Verifiqué la ayuda comprobando que GitHub rechazara el push directo, que el con
 
 ### Aplicación elegida
 
-Elegí un Libro de Ingreso de Expedientes. Conservé el formato visual del inicio
-de la aplicación tomada como referencia y construí una lógica propia y acotada.
-La solución tiene las tres capas requeridas: un frontend web, una API backend y
-una base de datos. Permite iniciar sesión, listar, buscar, crear, modificar y
-eliminar expedientes.
-
-La elegí porque se puede ejecutar y demostrar sin servicios pagos, tiene datos
-persistentes y ofrece suficiente funcionalidad para continuarla en los TP4–TP9.
-Al mismo tiempo, el dominio es pequeño y entendible para poder defender cada
-parte de la implementación.
+Elegi una pagina que era un borrador de una pagina que podria ayudar a una comisaria sin embargo al no tener finacimiento para servidores se dieron de baja, entonces para darle un uso se presentara en la materia, lo cual lo unico que se pulio fue el frontend y le pedi a codex que me ayude hacer el backend que estaba incompleto
 
 ### Decisiones de contenerización
 
-- El backend usa Python 3.12. La etapa `build` instala Flask, PyMySQL y Waitress;
-  la etapa `runtime` parte de `python:3.12-slim` y recibe las dependencias y el
-  código de la aplicación. Waitress expone la API en el puerto 8000.
-- El frontend usa Node.js 22 Alpine en las dos etapas. La primera genera
-  `dist`; la segunda copia solamente esos archivos y un servidor HTTP mínimo.
-  No usé nginx porque este frontend necesita además redirigir `/api` al servicio
-  `backend`, y el servidor Node incluido resuelve ambas tareas sin dependencias
-  de npm ni un cuarto componente.
-- Cada contexto de construcción tiene su propio `.dockerignore`. Se excluyen
-  dependencias, resultados de compilación, cachés, pruebas y logs que no deben
-  entrar en las imágenes de producción.
-- Compose crea una red interna. El frontend se comunica con
-  `http://backend:8000` y el backend con `db:3306`, usando nombres de servicio y
-  no direcciones IP.
-- MySQL es el único servicio con datos persistentes. El volumen nombrado
-  `db_data` se monta en `/var/lib/mysql`, que es la ruta de datos dentro del
-  contenedor oficial.
-- Las credenciales y contraseñas llegan mediante variables de entorno. `.env`
-  está ignorado por Git y `.env.example` sólo contiene valores para reemplazar.
-- El backend espera el `healthcheck` de MySQL mediante `depends_on`, evitando
-  intentar crear el esquema antes de que la base acepte conexiones.
+- El backend usa Python 3.12, instala Flask, PyMySQL y Waitress, mientras que la
+  API funciona por el puerto 8000.
+- El frontend usa Node.js 22 Alpine, donde una etapa genera los archivos finales
+  y la otra los utiliza para ejecutar la aplicación. Además, no usé nginx porque
+  Node también se encarga de enviar las solicitudes de `/api` al backend.
+- Cada parte del proyecto tiene su propio `.dockerignore`, para evitar copiar
+  archivos innecesarios dentro de las imágenes.
+- Docker Compose crea una red interna, por lo que los servicios se comunican
+  usando nombres como `backend` y `db` en lugar de direcciones IP.
+- MySQL guarda los datos en el volumen `db_data`. De esta manera, la información
+  no se pierde cuando se reinician los contenedores.
+- Las contraseñas y credenciales se manejan mediante variables de entorno,
+  mientras que el archivo `.env` no se sube a Git y `.env.example` sirve como
+  ejemplo.
+- El backend espera a que MySQL esté listo mediante el `healthcheck` antes de
+  intentar conectarse.
 - Las imágenes finales se publicaron en GHCR con el tag semántico `v0.1.0`. El
   archivo `docker-compose.registry.yml` usa esas imágenes y no contiene bloques
   `build`. Las dos son públicas y la variante se probó descargándolas sin una
