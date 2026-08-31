@@ -80,36 +80,23 @@ yo comprobé que todo funcionara con los tests.
 ### Duración del sprint
 
 Elegí una duración de una semana porque coincide con el ritmo de los trabajos
-prácticos de la materia y permite revisar el avance cada semana.
+prácticos de la materia y permite revisar el avance cada semana
 
 ### Límite de trabajo en progreso
 
-Elegí un límite de 2 porque trabajo solo. Puedo tener una tarea en progreso y
-avanzar con otra si la primera queda bloqueada, sin acumular demasiado trabajo
-sin terminar.
+Elegi el limite de trabajo acorde a mi ritmo o tiempo para darle mas dedicacion a cada punto 
 
 ### Diagnóstico de la historia mal escrita
 
-La historia "Como desarrollador quiero crear la tabla usuarios para guardar los
-datos" está mal escrita porque describe una tarea técnica y no una necesidad que
-aporte valor al usuario.
-
-La reescribiría como: "Como usuario quiero que mis expedientes queden guardados
-para poder consultarlos cuando vuelva a ingresar".
+Al principio creamos la historia “Inicio de sesión de usuarios”, donde el usuario debía poder ingresar con su usuario y contraseña para acceder al sistema, pero después vimos que esa historia no correspondía con lo que pedía la consigna, ya que tenía que estar relacionada con CI y las pruebas automáticas, por lo que fue necesario modificarla para adaptarla al objetivo del TP
 
 ### Problemas encontrados y soluciones
 
-- Al principio confundí `Auto-add sub-issues to project` con `Auto-add to
-  project`. Activé el segundo para que los Issues nuevos se agreguen solos.
-- Primero había creado una historia y tareas sobre el inicio de sesión, pero la
-  consigna pedía que fueran de CI. Reutilicé los mismos Issues y corregí sus
-  títulos y descripciones.
-- La terminal no tenía permiso para administrar Projects. Autoricé el permiso
-  `project` desde GitHub y después pude comprobar el sprint.
+-Al principio creé una historia y dos tareas relacionadas con el inicio de sesión, pero después vimos que la consigna pedía que estuvieran relacionadas con CI, por lo que hubo que corregirlas para que cumplieran con lo solicitado
+-Al crear el Sprint primero entré por error a la parte de etiquetas, después lo configuré correctamente dentro del Project como un campo de tipo Iteration con una duración de una semana
+-El límite WIP de 2 lo configuré primero en la columna Todo, por lo que aparecía 3/2 en rojo, entonces eliminé ese límite y lo configuré correctamente en In Progress
+-También tuve dificultad para encontrar la automatización Item closed, ya que primero estaba buscando desde el repositorio, después entré al Project y desde Workflows comprobé que al cerrar un Issue su estado cambiara automáticamente a Done
 
 ### Uso de inteligencia artificial
 
-Usé OpenAI Codex para revisar la consigna, preparar la jerarquía de Issues, el
-workflow mínimo y la documentación. Comprobé el resultado revisando el Project,
-el sprint, las relaciones entre los Issues y el Pull Request que cierra una
-tarea.
+Usé Codex para revisar la consigna y la documentación, principalmente se uso chatgpt de la web para guiarme y decidir donde tengo que ir, le adjunte fotos maso menos porque a veces me pierdo y me ayudo bastante 
