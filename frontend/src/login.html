@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ingresar · Libro de Expedientes</title>
+  <link rel="preload" as="image" href="/login-illustration.webp" type="image/webp">
+  <link rel="stylesheet" href="/login.css">
+  <script src="/login-lights.js" defer></script>
+  <script src="/login.js" defer></script>
+</head>
+<body class="auth-page">
+  <div class="auth-gradient-bg" aria-hidden="true">
+    <span class="gradient-one"></span>
+    <span class="gradient-two"></span>
+    <span class="gradient-three"></span>
+    <span class="gradient-four"></span>
+    <span class="gradient-five"></span>
+  </div>
+  <canvas class="auth-circuit-bg" aria-hidden="true"></canvas>
+
+  <main class="auth-shell auth-shell--login" aria-label="Ingreso al sistema">
+    <section class="auth-intro">
+      <div class="auth-mark auth-mark--active">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1H3V5zm0 4h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/></svg>
+      </div>
+      <div class="auth-intro-copy">
+        <p class="auth-kicker">LIBRO DIGITAL</p>
+        <h1>Libro de Ingreso de Expedientes</h1>
+        <p>Gestioná la información de los expedientes.</p>
+      </div>
+      <div class="auth-illustration-photo" aria-hidden="true"></div>
+    </section>
+
+    <section class="auth-form-panel">
+      <div class="auth-form-inner">
+        <div class="auth-form-header">
+          <h2>Iniciar sesión</h2>
+          <p>Ingresá con el usuario y la contraseña asignados.</p>
+        </div>
+
+        <div class="auth-error" id="authError" role="alert" aria-live="polite" hidden></div>
+        <form class="auth-form" id="loginForm" autocomplete="off">
+          <div class="field">
+            <label for="usuario">Usuario</label>
+            <div class="input-shell">
+              <span class="field-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-3.9 0-7 2.1-7 4.8 0 .7.5 1.2 1.2 1.2h11.6c.7 0 1.2-.5 1.2-1.2 0-2.7-3.1-4.8-7-4.8Z"/></svg>
+              </span>
+              <input type="text" id="usuario" name="login_user" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ingresá tu usuario" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="clave">Contraseña</label>
+            <div class="input-shell">
+              <span class="field-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V7Zm3 8.7V17h-2v-1.3a2 2 0 1 1 2 0Z"/></svg>
+              </span>
+              <input type="password" id="clave" name="login_password" autocomplete="new-password" placeholder="Ingresá tu contraseña" required>
+            </div>
+          </div>
+          <button class="auth-button" id="loginButton" type="submit">Ingresar</button>
+        </form>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

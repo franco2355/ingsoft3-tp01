@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111827">
+  <title>Libro de Ingreso de Expedientes</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/app-original.css">
+  <link rel="stylesheet" href="/admin-shell.css">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-fila">
+      <div class="marca">
+        <div class="marca-icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 3.75h6.2L18 8.55V20a1.75 1.75 0 0 1-1.75 1.75H7A1.75 1.75 0 0 1 5.25 20V5.5A1.75 1.75 0 0 1 7 3.75Z"/>
+            <path d="M13 4v4.75h4.75"/>
+            <path d="M8.25 13.25h7.5M8.25 16.75h5.25"/>
+            <path d="M8.25 9.75h2.5"/>
+          </svg>
+        </div>
+        <div class="marca-copy">
+          <h1>Libro de Ingreso de Expedientes</h1>
+          <div class="sub">Sistema de registro y consulta de expedientes</div>
+        </div>
+      </div>
+      <div class="usuario-box">
+        <nav class="nav-principal" aria-label="Navegación principal">
+          <a class="nav-item activa" href="/" title="Pantalla principal" aria-current="page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>
+            <span>Inicio</span>
+          </a>
+        </nav>
+        <span class="divisor-v" aria-hidden="true"></span>
+        <div class="perfil-chip" title="Usuario de demostración">
+          <span class="perfil-avatar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg>
+          </span>
+          <span>admin</span>
+        </div>
+        <button class="btn-salir" type="button" title="Cerrar sesión" aria-label="Cerrar sesión">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2H5V5h5V3Zm7.6 8H9v2h8.6l-3.3 3.3 1.4 1.4L21 12l-5.3-5.7-1.4 1.4L17.6 11Z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="contenedor">
+    <section class="tabla-cabecera pagina-intro" aria-labelledby="tituloPagina">
+      <nav class="migas" aria-label="Ruta de navegación">
+        <a href="/" aria-current="page">Inicio</a>
+      </nav>
+      <div class="pagina-intro-fila">
+        <div class="titulo">
+          <span class="titulo-contenido">
+            <span class="titulo-linea">
+              <span class="titulo-texto" id="tituloPagina">Gestión de expedientes</span>
+              <span class="contador" id="contador">0 registros</span>
+            </span>
+            <span class="tabla-ayuda">Consultá, registrá y administrá los expedientes del sistema.</span>
+          </span>
+        </div>
+        <div class="tabla-acciones">
+          <button class="btn btn-primario" id="btnNuevo" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            Nuevo expediente
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div class="panel barra-busqueda">
+      <div class="busqueda-fila">
+        <div class="buscador-principal">
+          <label class="sr-only" for="busqueda">Buscar expedientes</label>
+          <div class="input-icono">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 5L20.49 19l-5-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+            <input type="text" id="busqueda" placeholder="Buscar en todas las secciones por expediente, protagonista, DNI, acta o movimiento..." autocomplete="off">
+          </div>
+        </div>
+        <button class="btn btn-primario btn-buscar" id="btnBuscar" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 5L20.49 19l-5-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+          Buscar
+        </button>
+        <div class="busqueda-acciones">
+          <button class="btn btn-secundario btn-exportar" id="btnExportar" type="button" title="Exportar CSV">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7.5 7.5 4.5-4.5 4.5 4.5"/><path d="M5 13.5V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5.5"/></svg>
+            Exportar
+          </button>
+          <details class="menu-herramientas" id="menuHerramientas">
+            <summary class="btn btn-secundario btn-herramientas" title="Otras herramientas">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.16.38.37.72.66 1 .3.28.68.4 1.1.4h.1v4h-.1A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+              Herramientas
+              <svg class="caret" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M7.4 9.3 12 13.9l4.6-4.6L18 10.7l-6 6-6-6z"/></svg>
+            </summary>
+            <div class="menu-desplegable">
+              <button class="btn btn-secundario" id="btnLimpiarHerramientas" type="button">Limpiar búsqueda y filtros</button>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div class="filtros-fila">
+        <span class="filtros-etiqueta">Filtros</span>
+        <div class="filtro-corto filtro-columna"><label class="sr-only" for="filtroExpte">Expediente</label><div class="acta-control"><input id="filtroExpte" class="column-filter" data-filter="numero" placeholder="Expte: Todos" autocomplete="off"><button class="acta-desplegar" type="button" tabindex="-1" aria-label="Expedientes"><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5"/></svg></button></div></div>
+        <div class="filtro-corto filtro-anio filtro-columna"><label class="sr-only" for="filtroAnio">Año</label><div class="acta-control"><input id="filtroAnio" class="column-filter" data-filter="anio" placeholder="Año: Todos" autocomplete="off"><button class="acta-desplegar" type="button" tabindex="-1" aria-label="Años"><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5"/></svg></button></div></div>
+        <div class="filtro-corto filtro-columna"><label class="sr-only" for="filtroActa">Acta</label><div class="acta-control"><input id="filtroActa" class="column-filter" data-filter="acta" placeholder="Acta: Todas" autocomplete="off"><button class="acta-desplegar" type="button" tabindex="-1" aria-label="Actas"><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5"/></svg></button></div></div>
+        <div class="filtro-corto filtro-columna"><label class="sr-only" for="filtroFecha">Fecha</label><div class="acta-control"><input id="filtroFecha" class="column-filter" data-filter="fecha" placeholder="Fecha" autocomplete="off"><button class="acta-desplegar" type="button" tabindex="-1" aria-label="Fechas"><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5"/></svg></button></div></div>
+        <div class="filtro-corto ancho filtro-columna"><label class="sr-only" for="filtroProtagonista">Protagonista</label><div class="acta-control"><input id="filtroProtagonista" class="column-filter" data-filter="protagonista" placeholder="Protagonista" autocomplete="off"><button class="acta-desplegar" type="button" tabindex="-1" aria-label="Protagonistas"><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5"/></svg></button></div></div>
+        <div class="filtro-corto filtro-columna"><label class="sr-only" for="filtroDni">DNI</label><div class="acta-control"><input id="filtroDni" class="column-filter" data-filter="dni" placeholder="DNI: Todos" autocomplete="off"><button class="acta-desplegar" type="button" tabindex="-1" aria-label="DNI"><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5"/></svg></button></div></div>
+        <div class="filtro-corto filtro-columna"><label class="sr-only" for="filtroArticulos">Artículos</label><div class="acta-control"><input id="filtroArticulos" class="column-filter" data-filter="articulos" placeholder="Artículos" autocomplete="off"><button class="acta-desplegar" type="button" tabindex="-1" aria-label="Artículos"><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5"/></svg></button></div></div>
+        <div class="filtro-corto filtro-columna"><label class="sr-only" for="filtroDetalle">Detalle</label><div class="acta-control"><input id="filtroDetalle" class="column-filter" data-filter="detalle" placeholder="Detalle" autocomplete="off"><button class="acta-desplegar" type="button" tabindex="-1" aria-label="Detalles"><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5"/></svg></button></div></div>
+        <div class="filtro-corto ancho filtro-columna"><label class="sr-only" for="filtroMovimiento">Movimiento</label><div class="acta-control"><input id="filtroMovimiento" class="column-filter" data-filter="movimiento" placeholder="Movimiento" autocomplete="off"><button class="acta-desplegar" type="button" tabindex="-1" aria-label="Movimientos"><svg viewBox="0 0 24 24"><path d="m7 9.5 5 5 5-5"/></svg></button></div></div>
+        <button class="btn btn-limpiar clear-btn" id="btnLimpiar" type="button">Limpiar</button>
+      </div>
+    </div>
+
+    <div class="panel tabla-panel">
+      <div class="tabla-scroll">
+        <table id="tablaExpedientes">
+          <colgroup>
+            <col style="width:159px"><col style="width:108px"><col style="width:145px"><col style="width:180px"><col style="width:269px"><col style="width:153px"><col style="width:157px"><col style="width:180px"><col style="width:220px"><col style="width:150px">
+          </colgroup>
+          <thead><tr><th>Expte</th><th>Año</th><th>Acta</th><th>Fecha del hecho</th><th>Protagonista</th><th>DNI Nº</th><th>Artículos</th><th>Detalle</th><th>Movimiento</th><th class="col-acciones">Acciones</th></tr></thead>
+          <tbody id="cuerpoTabla"></tbody>
+        </table>
+      </div>
+      <div class="tabla-pie">
+        <span class="tabla-pie-info" id="paginaInfo">Mostrando 0 registros</span>
+        <div class="paginacion" aria-hidden="true">
+          <button type="button" class="pag-btn" tabindex="-1" disabled aria-label="Anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <span class="pag-num actual">1</span>
+          <button type="button" class="pag-btn" tabindex="-1" disabled aria-label="Siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tituloModal">
+      <div class="modal-cabecera">
+        <h2 id="tituloModal">Nuevo expediente</h2>
+        <button class="cerrar-modal" id="btnCerrar" type="button" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="formExpediente">
+        <input id="id" type="hidden">
+        <div class="modal-cuerpo">
+          <div class="grid-form">
+            <div class="campo"><label for="numero">Expte *</label><input id="numero" maxlength="30" required></div>
+            <div class="campo"><label for="anio">Año *</label><input id="anio" type="number" min="1900" required></div>
+            <div class="campo"><label for="acta">Acta</label><input id="acta" maxlength="60"></div>
+            <div class="campo"><label for="fecha">Fecha del hecho</label><input id="fecha" type="date"></div>
+            <div class="campo completo"><label for="protagonista">Protagonista *</label><input id="protagonista" maxlength="120" required></div>
+            <div class="campo"><label for="dni">DNI Nº</label><input id="dni" maxlength="20"></div>
+            <div class="campo"><label for="articulos">Artículos</label><input id="articulos" maxlength="255"></div>
+            <div class="campo completo"><label for="detalle">Detalle</label><textarea id="detalle" maxlength="255" rows="3"></textarea></div>
+            <div class="campo completo"><label for="movimiento">Movimiento</label><textarea id="movimiento" maxlength="255" rows="3"></textarea></div>
+            <p id="formError" class="form-error campo completo" role="alert"></p>
+          </div>
+        </div>
+        <div class="modal-pie">
+          <button type="button" class="btn btn-peligro" id="btnCancelar">Cancelar</button>
+          <button type="submit" class="btn btn-primario">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H5V5h10v4z"/></svg>
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"><span id="toastTexto">Guardado</span></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>
