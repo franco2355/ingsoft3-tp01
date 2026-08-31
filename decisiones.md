@@ -56,10 +56,10 @@ parte de la implementación.
   está ignorado por Git y `.env.example` sólo contiene valores para reemplazar.
 - El backend espera el `healthcheck` de MySQL mediante `depends_on`, evitando
   intentar crear el esquema antes de que la base acepte conexiones.
-- Las imágenes finales se publican en GHCR con el tag semántico `v0.1.0`. El
+- Las imágenes finales se publicaron en GHCR con el tag semántico `v0.1.0`. El
   archivo `docker-compose.registry.yml` usa esas imágenes y no contiene bloques
-  `build`. En esta etapa quedaron construidas y etiquetadas localmente; la
-  publicación remota se dejó pendiente por decisión del propietario.
+  `build`. Las dos son públicas y la variante se probó descargándolas sin una
+  sesión iniciada en el registry.
 
 ### Problemas encontrados y soluciones
 
@@ -74,6 +74,9 @@ parte de la implementación.
 - El frontend original incluía integraciones ajenas al alcance del TP. Se dejó
   su presentación principal y se reemplazó la lógica por una API Flask pequeña
   e independiente.
+- GHCR creó inicialmente los paquetes como privados. Se cambió la visibilidad
+  de ambos a pública desde la configuración de GitHub y luego se repitió la
+  descarga sin autenticación.
 
 ### Uso de inteligencia artificial
 
@@ -81,5 +84,5 @@ Usé OpenAI Codex como asistencia para explicar Docker paso a paso, preparar y
 revisar Dockerfiles, Compose, la aplicación simplificada y la documentación del
 TP2. También se utilizó para ejecutar las validaciones técnicas y preparar la
 publicación. Verifiqué la solución mediante los tests, el `healthcheck`, el
-flujo HTTP end-to-end, la persistencia de MySQL y un arranque local usando las
-imágenes etiquetadas para el compose de registry.
+flujo HTTP end-to-end, la persistencia de MySQL y un arranque descargando las
+imágenes públicas mediante el compose de registry.

@@ -110,25 +110,33 @@ fuente ni los archivos intermedios de compilación.
 
 ### 5. Imágenes del registry
 
-Las dos imágenes quedaron construidas localmente con los nombres que consume
-`docker-compose.registry.yml`:
+Las dos imágenes se publicaron con visibilidad pública y el tag `v0.1.0`:
+
+- [Paquete backend](https://github.com/users/franco2355/packages/container/package/ingsoft3-tp01-backend)
+- [Paquete frontend](https://github.com/users/franco2355/packages/container/package/ingsoft3-tp01-frontend)
+
+Se cerró la sesión de Docker en GHCR, se eliminaron las etiquetas locales y se
+forzó una descarga nueva. Compose informó:
 
 ```text
-ghcr.io/franco2355/ingsoft3-tp01-backend:v0.1.0
-ghcr.io/franco2355/ingsoft3-tp01-frontend:v0.1.0
+Image ghcr.io/franco2355/ingsoft3-tp01-backend:v0.1.0 Pulled
+Image ghcr.io/franco2355/ingsoft3-tp01-frontend:v0.1.0 Pulled
 ```
 
-El compose alternativo también se validó con esas etiquetas locales:
+Los digests descargados coincidieron con los publicados:
 
 ```text
-tp2-registry-local-backend-1    backend    Up
-tp2-registry-local-db-1         db         Up (healthy)
-tp2-registry-local-frontend-1   frontend   Up
+backend@sha256:57aa26b636202cef025a5f3086ddf0268985496cd99daffd05dd64cd162d1532
+frontend@sha256:114d5aa446c7cb254ee2ddb45a0c4f572b7d9b21654cc249e39dd1f33ae670ec
 ```
 
-La publicación en GHCR y la prueba de descarga desde una máquina limpia quedan
-pendientes. No se realizó esa modificación remota por indicación del propietario
-del repositorio.
+La variante remota quedó funcionando end-to-end:
+
+```text
+tp2-registry-remote-backend-1    backend    Up
+tp2-registry-remote-db-1         db         Up (healthy)
+tp2-registry-remote-frontend-1   frontend   Up
+```
 
 ### 6. Arranque desde un clon limpio
 

@@ -37,8 +37,8 @@ frontend y también directamente en <http://localhost:8000/healthz>.
 
 ## Arranque con imágenes del registry
 
-Una vez publicadas, esta variante descarga las imágenes `v0.1.0` desde GitHub
-Container Registry:
+Esta variante descarga las imágenes públicas `v0.1.0` desde GitHub Container
+Registry:
 
 ```bash
 cp .env.example .env
