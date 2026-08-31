@@ -100,3 +100,31 @@ Al principio creamos la historia “Inicio de sesión de usuarios”, donde el u
 ### Uso de inteligencia artificial
 
 Usé Codex para revisar la consigna y la documentación, principalmente se uso chatgpt de la web para guiarme y decidir donde tengo que ir, le adjunte fotos maso menos porque a veces me pierdo y me ayudo bastante 
+
+## TP4 — Integración continua
+
+### Estructura del pipeline
+
+Usé dos jobs, uno para el backend y otro para el frontend ya que los dos se ejecutan en paralelo porque uno no necesita esperar al otro
+
+### Caché de capas
+
+El pipeline guarda las capas de Docker en el caché de GitHub Actions, el backend y el frontend tienen un `scope` diferente para no mezclar sus
+capas. Si no cambian las dependencias se reutilizan las capas de `pip install` y `npm ci` y si cambia el código se vuelven a construir las capas
+que dependen de ese código. Si el caché desaparece, el pipeline sigue funcionando, pero tarda más porque construye todo nuevamente.
+
+### Uso de los Dockerfiles
+
+El pipeline construye las imágenes usando los mismos Dockerfiles del TP2, de esta manera el proceso de GitHub es el mismo que se usa localmente
+y se evita tener dos formas diferentes de construir la aplicación.
+
+### Problemas encontrados y soluciones
+
+- El archivo `ci.yml` tenía espacios incorrectos al comienzo, entonces corregí la sangría
+- El enlace del badge quedó dividido en dos líneas, entonces lo corregí para que al hacer clic abra el historial del workflow.
+- Agregué una dependencia inexistente para comprobar el gate. El backend quedó rojo y el merge fue bloqueado. Después eliminé esa dependencia y
+los dos jobs terminaron en verde.
+
+### Uso de inteligencia artificial
+
+Usé Codex para entender el workflow, el caché de capas y los checks obligatorios, además quise que revise el archivo YAML y que verifique si hice bien o no las cosas. Yo ejecuté los comandos, configuré GitHub y comprobé el funcionamiento con los builds y la secuencia rojo a verde.
