@@ -1,5 +1,8 @@
 # Libro de Ingreso de Expedientes
 
+[![CI](https://github.com/franco2355/ingsoft3-tp01/actions/workflows/ci.yml/badge.svg)](https://github.com/franco2355/ingsoft3-tp01/actions/workflows/ci.yml)
+
+
 Aplicación elegida para los trabajos prácticos de Ingeniería del Software 3. El
 sistema permite iniciar sesión y gestionar expedientes desde una interfaz web.
 
