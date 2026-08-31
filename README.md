@@ -1,69 +1,145 @@
 # Libro de Ingreso de Expedientes
 
 Aplicación elegida para los trabajos prácticos de Ingeniería del Software 3. El
-sistema tiene un frontend web, una API Flask y una base de datos MySQL.
+sistema permite iniciar sesión y gestionar expedientes desde una interfaz web.
+
+Está compuesto por:
+
+- Frontend: HTML, CSS y JavaScript servido con Node.js 22.
+- Backend: API Flask ejecutada con Python 3.12 y Waitress.
+- Base de datos: MySQL 8.4.
 
 ## Requisitos
 
 - Git.
 - Docker con Docker Compose.
 
-## Arranque desde cero
+Podés comprobar las versiones instaladas con:
+
+```bash
+docker --version
+docker compose version
+```
+
+## Clonar el proyecto
 
 ```bash
 git clone https://github.com/franco2355/ingsoft3-tp01.git
 cd ingsoft3-tp01
+```
+
+Todos los comandos siguientes deben ejecutarse desde la raíz
+`ingsoft3-tp01`.
+
+## Configurar las variables de entorno
+
+No necesitás instalar MySQL en tu computadora: Docker descarga la imagen y
+configura la base automáticamente.
+
+El repositorio incluye `.env.example`, que sirve como plantilla. Copialo antes
+de levantar la aplicación:
+
+```bash
 cp .env.example .env
 ```
 
-Antes de iniciar, editá `.env` y reemplazá todos los valores `cambiar`. Esos
-valores son locales y el archivo `.env` no se guarda en Git.
+Abrí el archivo con Visual Studio Code o desde la terminal:
 
-Construí e iniciá los tres servicios:
+```bash
+nano .env
+```
+
+Vas a encontrar estas variables:
+
+```env
+DB_NAME=expedientes
+DB_USER=expedientes
+DB_PASSWORD=cambiar
+DB_ROOT_PASSWORD=cambiar
+APP_USER=cambiar
+APP_PASSWORD=cambiar
+```
+
+Reemplazá todos los valores `cambiar`. `APP_USER` y `APP_PASSWORD` serán los
+datos para iniciar sesión en la página. Para guardar en `nano`, presioná
+`Ctrl+O`, `Enter` y `Ctrl+X`.
+
+El archivo `.env` contiene datos locales y está excluido de Git.
+
+## Levantar la aplicación construyendo las imágenes
+
+Esta opción construye el frontend y el backend desde sus Dockerfiles:
 
 ```bash
 docker compose up -d --build
 ```
 
-Comprobá el estado:
+Docker inicia los servicios `frontend`, `backend` y `db`. Comprobá su estado
+con:
 
 ```bash
 docker compose ps
 ```
 
-Abrí <http://localhost:3000> e ingresá con los valores `APP_USER` y
-`APP_PASSWORD` configurados en `.env`. La API queda disponible a través del
-frontend y también directamente en <http://localhost:8000/healthz>.
-
-## Arranque con imágenes del registry
+## Levantar la aplicación desde el registry
 
 Esta variante descarga las imágenes públicas `v0.1.0` desde GitHub Container
-Registry:
+Registry en lugar de construirlas localmente.
+
+Primero descargá las imágenes:
 
 ```bash
-cp .env.example .env
+docker compose -f docker-compose.registry.yml pull
+```
+
+Después iniciá los servicios:
+
+```bash
 docker compose -f docker-compose.registry.yml up -d
 ```
 
-También requiere reemplazar previamente los valores `cambiar` del archivo
-`.env`.
+Comprobá su estado:
+
+```bash
+docker compose -f docker-compose.registry.yml ps
+```
+
+Las imágenes publicadas son:
+
+- [Backend v0.1.0](https://github.com/users/franco2355/packages/container/package/ingsoft3-tp01-backend)
+- [Frontend v0.1.0](https://github.com/users/franco2355/packages/container/package/ingsoft3-tp01-frontend)
+
+## Acceder a la aplicación
+
+Abrí <http://localhost:3000> e ingresá con `APP_USER` y `APP_PASSWORD` definidos
+en `.env`.
+
+La comprobación del backend está disponible directamente en
+<http://localhost:8000/healthz>.
 
 ## Detener el sistema
 
-Para detener los contenedores conservando la base de datos:
+Si construiste las imágenes localmente, detené los servicios con:
 
 ```bash
 docker compose down
 ```
 
-Para eliminar también los datos persistidos:
+Este comando elimina los contenedores, pero conserva el volumen de MySQL. Para
+eliminar también los datos guardados:
 
 ```bash
 docker compose down -v
 ```
 
-Si levantaste la variante del registry, agregá
-`-f docker-compose.registry.yml` a esos comandos.
+Si usaste las imágenes del registry, los comandos son:
+
+```bash
+docker compose -f docker-compose.registry.yml down
+docker compose -f docker-compose.registry.yml down -v
+```
+
+Usá `down -v` solamente cuando realmente quieras borrar la base de datos.
 
 ## Pruebas
 
