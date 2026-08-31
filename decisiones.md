@@ -63,10 +63,18 @@ parte de la implementación.
 
 ### Problemas encontrados y soluciones
 
+- El volumen `db_data` se utilizó antes de declararlo al final del archivo y
+  Compose rechazó la configuración. Se agregó la declaración global
+  `volumes: db_data:`.
+- Al ejecutar `npm install` desde `backend`, npm no encontró `package.json`.
+  Se volvió a la raíz y se ejecutó dentro de `frontend`.
 - El login no tomaba las nuevas credenciales porque los contenedores tenían la
   configuración anterior, entonces actualicé el `.env` y los recreé.
 - El frontend original tenía funciones que no necesitaba para el TP, entonces
   mantuve el diseño principal y simplifiqué la lógica usando una API Flask.
+- GHCR creó inicialmente los paquetes como privados. Se cambió la visibilidad
+  de ambos a pública desde la configuración de GitHub y luego se repitió la
+  descarga sin autenticación.
 
 ### Uso de inteligencia artificial
 
