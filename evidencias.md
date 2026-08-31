@@ -152,3 +152,9 @@ Se clonó localmente el commit del TP2 en una carpeta temporal, se ejecutó
 
 Los tres servicios quedaron activos, MySQL saludable y `git status --short` no
 mostró archivos generados ni cambios dentro del clon.
+
+### 7. Pull Request
+
+El TP2 se entregó desde `feature/tp2-desde-cero` hacia `main` mediante el
+[Pull Request #6](https://github.com/franco2355/ingsoft3-tp01/pull/6). El PR
+quedó abierto para revisión y no se realizó un merge directo.
