@@ -7,6 +7,10 @@ obj/
 dist/
 build/
 
+# Caché y bytecode generados por Python.
+__pycache__/
+*.py[cod]
+
 # Secretos y configuraciones locales.
 .env
 *.local
@@ -18,5 +22,4 @@ Thumbs.db
 # Configuraciones personales de los editores.
 .vscode/
 .idea/
-
 

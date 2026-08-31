@@ -1,0 +1,42 @@
+/* Adaptaciones mínimas para conectar el Inicio original con el API básico. */
+[hidden] { display: none !important; }
+
+.app-header > .header-fila { max-width: none; }
+.app-header .btn-salir {
+  width: 42px;
+  min-height: 42px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-left: 1px solid #d9e2ef;
+  color: #e60023;
+  background: transparent;
+  cursor: pointer;
+}
+.app-header .btn-salir svg { width: 21px; height: 21px; }
+
+.busqueda-acciones { margin-left: 14px; display: flex; align-items: center; gap: 8px; }
+.filtros-fila .acta-control { width: 100%; }
+.filtros-fila .acta-control input { padding-right: 34px; }
+.filtros-fila .acta-desplegar { pointer-events: auto; }
+
+#tablaExpedientes { --tabla-min-width: 1640px; }
+#tablaExpedientes tbody td { vertical-align: middle; }
+#tablaExpedientes .celda-contenido { display: block; overflow-wrap: anywhere; }
+#tablaExpedientes .acciones-grupo {
+  width: 100%;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.form-error { min-height: 18px; margin: 0; color: #b42318; }
+.menu-desplegable { z-index: 30; }
+
+@media (max-width: 1100px) {
+  .busqueda-fila { flex-wrap: wrap; gap: 10px; }
+  .busqueda-acciones { margin-left: 0; }
+}
