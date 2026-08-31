@@ -1,0 +1,10 @@
+# Nombre del workflow
+name: Verificar cambios
+# Se ejecuta en cada Pull Request
+on: pull_request
+jobs:
+  revisar: # Nombre del trabajo
+    runs-on: ubuntu-latest # Usa Ubuntu
+    steps:
+      # Descarga el código del repositorio
+      - uses: actions/checkout@v4

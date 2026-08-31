@@ -14,9 +14,7 @@ No habría ocurrido si cada rama cambiaba una línea distinta o si la rama B se 
 
 ## Uso de inteligencia artificial
 
-Usé OpenAI Codex para entender los comandos, revisar si los pasos estaban bien y solucionar errores. Yo ejecuté los comandos principales, configuré GitHub, creé las ramas y los PR, resolví el conflicto y saqué las primeras tres capturas. Codex publicó la release y preparó los archivos finales.
-
-Verifiqué la ayuda comprobando que GitHub rechazara el push directo, que el conflicto apareciera y se resolviera, y que el tag y la release quedaran publicados.
+Usé OpenAI Codex para entender los comandos, revisar si los pasos estaban bien y solucionar errores. Yo ejecuté los comandos principales, configuré GitHub, creé las ramas y los PR y resolví el conflicto.
 
 ## TP2 — Contenedores
 
@@ -61,12 +59,57 @@ Elegi una pagina que era un borrador de una pagina que podria ayudar a una comis
 - GHCR creó inicialmente los paquetes como privados. Se cambió la visibilidad
   de ambos a pública desde la configuración de GitHub y luego se repitió la
   descarga sin autenticación.
+- Codex me ayudo a entender algunos comandos como por ejemplo:
+
+  ```yml
+  healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  ```
+
+  que no sabia para que lo usaba y a entender el formato de lo `.yml`.
 
 ### Uso de inteligencia artificial
 
-Usé OpenAI Codex como asistencia para explicar Docker paso a paso, preparar y
-revisar Dockerfiles, Compose, la aplicación simplificada y la documentación del
-TP2. También se utilizó para ejecutar las validaciones técnicas y preparar la
-publicación. Verifiqué la solución mediante los tests, el `healthcheck`, el
-flujo HTTP end-to-end, la persistencia de MySQL y un arranque descargando las
-imágenes públicas mediante el compose de registry.
+Usé OpenAI Codex como ayuda para entender Docker, preparar y revisar los
+Dockerfiles, Compose, la aplicación y la documentación del TP2, además lo
+utilicé para hacer algunas validaciones y preparar la publicación, mientras que
+yo comprobé que todo funcionara con los tests.
+
+## TP3 — Planificación y trazabilidad
+
+### Duración del sprint
+
+Elegí una duración de una semana porque coincide con el ritmo de los trabajos
+prácticos de la materia y permite revisar el avance cada semana.
+
+### Límite de trabajo en progreso
+
+Elegí un límite de 2 porque trabajo solo. Puedo tener una tarea en progreso y
+avanzar con otra si la primera queda bloqueada, sin acumular demasiado trabajo
+sin terminar.
+
+### Diagnóstico de la historia mal escrita
+
+La historia "Como desarrollador quiero crear la tabla usuarios para guardar los
+datos" está mal escrita porque describe una tarea técnica y no una necesidad que
+aporte valor al usuario.
+
+La reescribiría como: "Como usuario quiero que mis expedientes queden guardados
+para poder consultarlos cuando vuelva a ingresar".
+
+### Problemas encontrados y soluciones
+
+- Al principio confundí `Auto-add sub-issues to project` con `Auto-add to
+  project`. Activé el segundo para que los Issues nuevos se agreguen solos.
+- Primero había creado una historia y tareas sobre el inicio de sesión, pero la
+  consigna pedía que fueran de CI. Reutilicé los mismos Issues y corregí sus
+  títulos y descripciones.
+- La terminal no tenía permiso para administrar Projects. Autoricé el permiso
+  `project` desde GitHub y después pude comprobar el sprint.
+
+### Uso de inteligencia artificial
+
+Usé OpenAI Codex para revisar la consigna, preparar la jerarquía de Issues, el
+workflow mínimo y la documentación. Comprobé el resultado revisando el Project,
+el sprint, las relaciones entre los Issues y el Pull Request que cierra una
+tarea.
