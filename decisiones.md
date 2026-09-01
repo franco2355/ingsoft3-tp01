@@ -22,6 +22,13 @@ Usé OpenAI Codex para entender los comandos, revisar si los pasos estaban bien 
 
 Elegi una pagina que era un borrador de una pagina que podria ayudar a una comisaria sin embargo al no tener finacimiento para servidores se dieron de baja, entonces para darle un uso se presentara en la materia, lo cual lo unico que se pulio fue el frontend y le pedi a codex que me ayude hacer el backend que estaba incompleto
 
+La elegí porque:
+
+- Se puede construir y ejecutar localmente con Docker Compose.
+- Tiene tests en el backend y una verificación de sintaxis en el frontend para continuar con el TP5.
+- Entiendo el código de Flask, HTML y JavaScript y puedo modificarlo.
+- Su tamaño es suficiente para la materia porque tiene login, búsqueda y gestión de expedientes, sin ser demasiado grande.
+
 ### Decisiones de contenerización
 
 - El backend usa Python 3.12, instala Flask, PyMySQL y Waitress, mientras que la
