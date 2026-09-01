@@ -54,6 +54,14 @@ Después de ejecutar `docker compose down` y `docker compose up -d`, el mismo
 volumen continúa disponible. Esto demuestra que los datos no dependen de la
 vida de los contenedores.
 
+#### Eliminación del volumen con `down -v`
+
+![Eliminación del volumen con down -v](img/tp2-down-v.png)
+
+La captura muestra el volumen temporal `prueba_db_data`, su eliminación con
+`docker compose -p prueba down -v` y que después ya no aparece en la lista. Se
+usó un proyecto temporal para no eliminar la base de datos real.
+
 ### 3. Comparación del tamaño de las imágenes
 
 ![Tamaño de las imágenes finales y de construcción](img/tp2-tamanos-imagenes.png)
