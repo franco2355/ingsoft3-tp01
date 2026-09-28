@@ -146,12 +146,20 @@ Usá `down -v` solamente cuando realmente quieras borrar la base de datos.
 
 ## Pruebas
 
+Las suites y sus umbrales se ejecutan en etapas de prueba de los mismos
+Dockerfiles que usa CI:
+
 ```bash
-docker run --rm -v "$PWD/backend:/app" -w /app python:3.12 \
-  sh -c "pip install -r requirements.txt && python -m unittest discover -s tests"
-docker run --rm -v "$PWD/frontend:/app" -w /app node:22-alpine \
-  npm run check
+docker build --target test -t expedientes-backend-test ./backend
+docker run --rm expedientes-backend-test
+
+docker build --target test -t expedientes-frontend-test ./frontend
+docker run --rm expedientes-frontend-test
 ```
+
+El backend exige 90% de líneas y 85% de ramas. El frontend exige 90% de
+líneas, funciones y sentencias, y 85% de ramas. Un valor inferior termina el
+comando con error.
 
 ## Servicios
 

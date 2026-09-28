@@ -135,3 +135,90 @@ los dos jobs terminaron en verde.
 ### Uso de inteligencia artificial
 
 Usé Codex para entender el workflow, el caché de capas y los checks obligatorios, además quise que revise el archivo YAML y que verifique si hice bien o no las cosas. Yo ejecuté los comandos, configuré GitHub y comprobé el funcionamiento con los builds y la secuencia rojo a verde.
+
+## TP5 — Testing y calidad
+
+**Estado:** implementación y validación local completa; las corridas y Pull
+Requests todavía no tienen URL porque esta rama no fue publicada.
+
+**Alcance:** unit tests, cobertura, umbrales y preparación del quality gate.
+
+**Fuente de verdad:** `.github/workflows/ci.yml`, `backend/tests/`,
+`frontend/tests/`, `backend/.coveragerc` y `frontend/vitest.config.js`.
+
+### Lógica elegida
+
+En el backend probé la validación de número, año, protagonista y longitudes de
+los campos opcionales. Son reglas que protegen los datos antes de escribirlos
+en MySQL; un cambio incorrecto en un borde permitiría guardar expedientes
+inválidos. También separé el caso de uso `create_validated_expediente` para
+inyectarle la persistencia. El test con `unittest.mock.Mock` comprueba que un
+expediente válido se guarda una sola vez y que uno inválido nunca llega a la
+base.
+
+En el frontend extraje a `src/logic.js` el formato de fechas, el filtrado, la
+exportación CSV y el cliente HTTP. Los tests usan `it.each`, incluyen entradas
+inválidas y reemplazan `fetch` con `vi.fn()`. Así se comprueba el encabezado de
+autorización y la reacción ante un `401` sin salir a la red.
+
+### Cobertura y umbrales
+
+- Backend: umbral de 90% de líneas y 85% de ramas. Medición local actual: 100%
+  de líneas y 100% de ramas.
+- Frontend: umbral de 90% de líneas y 85% de ramas, además de 90% de funciones
+  y sentencias. Medición local actual: 100% de líneas y 95,23% de ramas.
+
+Elegí umbrales algo menores que la medición actual para permitir refactors
+pequeños, pero suficientemente altos para que agregar lógica sin tests rompa el
+build. Para subirlos debería cubrir primero las ramas opcionales que no pueden
+ocurrir desde la interfaz normal y después sostener ese nivel en cada cambio.
+
+El backend deja fuera del cálculo el arranque, la configuración, la conexión y
+el repositorio SQL, y las rutas Flask. Son cableado o infraestructura; la cuenta
+se concentra en `domain.py` y `services.py`, donde están las reglas y casos de
+uso. El frontend incluye `src/logic.js`; deja fuera `app.js`, `login.js`, el
+servidor y el script de build porque contienen integración con DOM, HTTP o
+empaquetado y corresponden a pruebas de integración o end-to-end.
+
+### Camino sin cubrir observado
+
+El reporte de ramas señaló la expresión `valor ?? ""` de `src/logic.js:13`. La
+entrada concreta que recorrería el camino faltante es llamar a
+`filtrarExpedientes([{ numero: "EXP-1" }], { dni: null })`. Decidí no agregarla:
+los filtros nacen de campos HTML y siempre entregan texto; sí agregué el caso de
+un expediente sin el campo filtrado, porque puede aparecer al leer datos
+históricos incompletos.
+
+### Por qué coverage alto no garantiza calidad
+
+Un test podría llamar a `validate_expediente` con datos válidos sin hacer ningún
+`assert`: ejecutaría todas sus líneas y subiría el porcentaje, pero no detectaría
+si mañana el validador devuelve información equivocada. Por eso cada test de la
+suite verifica un resultado o una interacción concreta y el porcentaje se usa
+como detector de huecos, no como prueba de corrección.
+
+### Gate y evidencias remotas pendientes
+
+El workflow genera un resumen y artefactos HTML/XML/JSON para backend y HTML/LCOV
+para frontend. Los umbrales terminan cada job con error antes del build si bajan.
+La secuencia de dos Pull Requests exigida por la consigna —uno rojo que después
+se corrige y otro abierto en rojo— y sus enlaces sólo pueden producirse cuando
+se publique la rama y se habiliten los checks obligatorios en GitHub.
+
+### Problemas encontrados y soluciones
+
+- La carpeta `tests/` estaba excluida por `.dockerignore`, por lo que la etapa
+  de prueba no podía copiarla. Quité esa exclusión; las pruebas siguen sin pasar
+  a la imagen final porque el runtime parte de otra etapa.
+- Ejecutar `pytest` directamente dentro de la imagen no encontraba el paquete
+  `app`. Lo cambié por `python -m pytest`, que agrega correctamente el directorio
+  de trabajo al path de módulos.
+- La versión anterior de Vitest tenía avisos de seguridad. Actualicé Vitest y su
+  proveedor de cobertura a 5.0.2; `npm audit` quedó sin vulnerabilidades.
+
+### Uso de inteligencia artificial
+
+Usé OpenAI Codex para adaptar la consigna a Python y JavaScript, separar la
+lógica testeable, escribir y revisar las suites y preparar el workflow. Verifiqué
+el resultado construyendo las etapas `test` de ambos Dockerfiles: pasaron 21
+casos en backend y 12 en frontend, con los umbrales aplicados.

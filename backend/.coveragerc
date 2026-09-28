@@ -1,0 +1,15 @@
+[run]
+branch = True
+source = app
+omit =
+    app/__init__.py
+    app/__main__.py
+    app/config.py
+    app/db.py
+    app/repository.py
+    app/routes.py
+
+[report]
+show_missing = True
+skip_covered = False
+precision = 2

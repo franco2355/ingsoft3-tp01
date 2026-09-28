@@ -8,7 +8,7 @@ from pymysql.err import IntegrityError
 from . import repository
 from .db import connect
 from .config import settings
-from .domain import validate_expediente
+from .services import create_validated_expediente
 
 
 api = Blueprint("api", __name__)
@@ -83,13 +83,15 @@ def list_expedientes():
 
 @api.post("/api/expedientes")
 def create_expediente():
-    data, errors = validate_expediente(request.get_json(silent=True) or {})
-    if errors:
-        return jsonify(errors=errors), 400
     try:
-        created = repository.create(data)
+        created, errors = create_validated_expediente(
+            request.get_json(silent=True) or {},
+            repository,
+        )
     except IntegrityError:
         return jsonify(error="Ya existe ese número de expediente para el año indicado."), 409
+    if errors:
+        return jsonify(errors=errors), 400
     return jsonify(response(created)), 201
 
 

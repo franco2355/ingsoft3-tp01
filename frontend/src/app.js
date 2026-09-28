@@ -1,3 +1,10 @@
+import {
+  createApiClient,
+  crearCsv,
+  fechaVisible,
+  filtrarExpedientes,
+} from "./logic.js";
+
 const $ = (selector) => document.querySelector(selector);
 const cuerpoTabla = $("#cuerpoTabla");
 const tabla = $("#tablaExpedientes");
@@ -10,27 +17,19 @@ if (!authToken) {
   window.location.replace("/login");
 }
 
-async function apiFetch(url, options = {}) {
-  const headers = new Headers(options.headers || {});
-  if (authToken) headers.set("Authorization", `Bearer ${authToken}`);
-  const response = await fetch(url, { ...options, headers });
-  if (response.status === 401) {
+const apiFetch = createApiClient({
+  fetchImpl: fetch,
+  getToken: () => authToken,
+  onUnauthorized: () => {
     sessionStorage.clear();
     window.location.replace("/login");
-  }
-  return response;
-}
+  },
+});
 
 function escapar(value) {
   const node = document.createElement("span");
   node.textContent = value ?? "";
   return node.innerHTML;
-}
-
-function fechaVisible(value) {
-  if (!value) return "—";
-  const partes = String(value).split("-");
-  return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : value;
 }
 
 function filaVacia() {
@@ -89,10 +88,10 @@ function render(items) {
 
 function aplicarFiltros() {
   const filtros = [...document.querySelectorAll(".column-filter")];
-  render(expedientes.filter((item) => filtros.every((filtro) => {
-    const buscado = filtro.value.trim().toLowerCase();
-    return !buscado || String(item[filtro.dataset.filter] ?? "").toLowerCase().includes(buscado);
-  })));
+  const criterios = Object.fromEntries(
+    filtros.map((filtro) => [filtro.dataset.filter, filtro.value]),
+  );
+  render(filtrarExpedientes(expedientes, criterios));
 }
 
 async function cargar() {
@@ -170,11 +169,7 @@ function limpiar() {
 }
 
 function exportar() {
-  const campos = ["numero", "anio", "acta", "fecha", "protagonista", "dni", "articulos", "detalle", "movimiento"];
-  const cabecera = ["Expte", "Año", "Acta", "Fecha del hecho", "Protagonista", "DNI Nº", "Artículos", "Detalle", "Movimiento"];
-  const csv = [cabecera, ...visibles.map((item) => campos.map((campo) => item[campo] ?? ""))]
-    .map((fila) => fila.map((valor) => `"${String(valor).replaceAll('"', '""')}"`).join(","))
-    .join("\n");
+  const csv = crearCsv(visibles);
   const enlace = document.createElement("a");
   enlace.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   enlace.download = "expedientes.csv";
