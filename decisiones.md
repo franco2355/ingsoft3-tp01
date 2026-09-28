@@ -222,3 +222,125 @@ Usé OpenAI Codex para adaptar la consigna a Python y JavaScript, separar la
 lógica testeable, escribir y revisar las suites y preparar el workflow. Verifiqué
 el resultado construyendo las etapas `test` de ambos Dockerfiles: pasaron 21
 casos en backend y 12 en frontend, con los umbrales aplicados.
+
+## TP6 — CD y environments
+
+### Enlaces de este TP
+
+- Paquete backend: <https://github.com/users/franco2355/packages/container/package/ingsoft3-tp01-backend>
+- Paquete frontend: <https://github.com/users/franco2355/packages/container/package/ingsoft3-tp01-frontend>
+- QA local: <http://localhost:3100>
+- PROD local: <http://localhost:3001>
+- Corrida de PR con publicación salteada: pendiente hasta publicar esta rama.
+- Corrida de `main` con publicación posterior a los tests: pendiente hasta
+  publicar esta rama.
+
+**Estado:** implementación y validación local; faltan el runner, los environments,
+los secrets, la aprobación/rechazo y las corridas porque no se modificó GitHub.
+
+**Alcance:** publicación de imágenes por SHA, promoción local a QA y PROD, smoke
+tests y procedimiento de rollback.
+
+**Fuente de verdad:** `.github/workflows/ci.yml`, `compose.qa.yml`,
+`compose.prod.yml`, `scripts/smoke-test.sh` y `docs/TP6_LOCAL.md`.
+
+### Artefacto verificado
+
+Cada job ejecuta sus tests y umbrales antes de entrar a GHCR. El login y el
+`push` tienen una condición que sólo se cumple en un `push` a `main`; un Pull
+Request verde construye la imagen pero deja esos pasos salteados. La publicación
+es el último paso propio del job y etiqueta la imagen con `github.sha`. Si se
+publicara aun con verificaciones rojas, el registry dejaría de significar
+«artefactos que pasaron el quality gate» y sería sólo un depósito de builds.
+
+### Continuous Delivery y cadena de promoción
+
+Implementé Continuous Delivery: QA se despliega automáticamente después de un
+merge verde, mientras que producción exige una decisión humana. No es
+Continuous Deployment porque no todo cambio aprobado por las máquinas llega a
+PROD sin intervención.
+
+`deploy-qa` declara `needs` sobre los dos jobs de build; por eso sólo recibe una
+imagen cuando backend y frontend terminaron bien. `deploy-production` necesita
+a QA y usa el environment `production`, donde debe vivir el required reviewer.
+Los dos deploys reciben el mismo `IMAGE_TAG`, por lo que promueven exactamente
+el commit verificado y no vuelven a construir la aplicación.
+
+Los secrets de base y acceso se referencian por nombre desde cada environment.
+Los valores de PROD deben vivir sólo en `production`; así un job de PR o QA no
+puede leerlos. `GITHUB_TOKEN` se usa únicamente para publicar paquetes desde
+los jobs autorizados y nunca se guarda en archivos.
+
+### Configuración por entorno
+
+La imagen del frontend contiene el servidor y los archivos estáticos, pero no
+la dirección de una API. `BACKEND_URL` se lee cuando arranca el contenedor. En
+QA y PROD vale `http://backend:8000`, pero cada proyecto Compose tiene su propia
+red y resuelve a su backend correspondiente. Las credenciales, nombres de base
+y tag de imagen también llegan por variables; no quedan dentro de las imágenes.
+La separación de datos se verificó insertando `AISLAMIENTO-PROD` sólo en MySQL
+de PROD: la consulta devolvió 1 en PROD y 0 en QA.
+
+### Aprobación y limitaciones del fallback
+
+Antes de aprobar PROD revisaría que ambos jobs de calidad estén verdes, que el
+smoke de QA responda, que el SHA sea el del merge esperado y que el cambio no
+incluya una migración destructiva. También comprobaría manualmente el flujo
+afectado en QA; el botón de aprobación no reemplaza esa revisión.
+
+Elegí el fallback local con runner propio para evitar depender de una tarjeta o
+de un free tier. Pierde URLs públicas, independencia de mi computadora y la
+prueba de cold starts de un proveedor. Además, el runner debe permanecer
+encendido durante el deploy. No aplica la pérdida de garantía de Render al
+reconstruir desde Git: este diseño descarga de GHCR el SHA exacto que pasó CI.
+
+### Smoke test
+
+El script reintenta hasta que `/healthz` del backend y la raíz del frontend
+respondan. Como `/healthz` ejecuta `SELECT 1`, comprueba que API, base y frontend
+están disponibles. No demuestra que todas las operaciones funcionen, que el
+contenido sea correcto ni que un usuario pueda completar el flujo de login y
+CRUD; esas comprobaciones necesitan pruebas end-to-end. Tampoco identifica por
+sí solo la versión: esa trazabilidad viene del `IMAGE_TAG` y del deployment.
+
+### Patrón y rollback
+
+En una producción real elegiría blue-green. Esta aplicación es pequeña y el
+cambio de tráfico permitiría volver rápido a la versión anterior sin mezclar
+instancias de dos versiones. Cuesta mantener dos stacks simultáneos y no
+resuelve una migración de datos incompatible; antes de usarlo faltarían métricas
+de errores, latencia y salud por versión.
+
+El rollback actual consiste en tomar el SHA del último deployment sano, ejecutar
+manualmente el workflow con ese valor en `image_tag`, esperar el smoke de QA,
+aprobar production y confirmar su smoke. La imagen no se recompila: se vuelve a
+desplegar el artefacto ya verificado. El tiempo todavía no está consignado porque
+la consigna pide medir una corrida real del pipeline y esta implementación no se
+publicó; inventar un número o medir un `compose up` manual no sería evidencia.
+El rollback de código tampoco revierte datos: para eso harían falta migraciones
+compatibles hacia atrás y un procedimiento probado de restauración de backup.
+
+### Problemas encontrados y soluciones
+
+- Para evitar que PROD reemplazara a QA agregué nombres top-level distintos,
+  puertos de host distintos y volúmenes `db_data_qa`/`db_data_prod`.
+- El healthcheck original con `mysqladmin ping` sin autenticación podía quedar
+  verde antes de aceptar conexiones TCP de la aplicación. Lo cambié por un ping
+  autenticado al usuario de la app y repetí el arranque con volúmenes vacíos.
+- Otro proceso local ya usaba el puerto 3000. No lo detuve: asigné el 3100 al
+  frontend de QA y mantuve 3001 para PROD.
+- Evité reconstruir durante el deploy: los jobs descargan las imágenes con el
+  SHA producido por CI y Compose levanta ese tag.
+- La imagen del frontend ya leía `BACKEND_URL` al arrancar; mantuve esa
+  configuración y comprobé que no se hornee una dirección de QA o PROD.
+- Añadí reintentos al smoke porque MySQL y la aplicación pueden tardar en quedar
+  listos aun cuando el comando de despliegue ya terminó.
+
+### Uso de inteligencia artificial
+
+Usé OpenAI Codex para adaptar el fallback de la consigna a los puertos y stack
+de esta aplicación, escribir los Compose, el smoke test, el workflow y revisar
+la separación de secrets. Verifiqué localmente la sintaxis, el aislamiento de
+los proyectos, la construcción de las imágenes y el funcionamiento de ambos
+entornos. La aprobación, el rechazo y la evidencia de Actions siguen pendientes
+porque requieren operar GitHub.
