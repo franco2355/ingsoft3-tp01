@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   build:
@@ -36,3 +37,44 @@ jobs:
           name: coverage-${{ matrix.app }}
           path: ${{ matrix.app }}/coverage
       - run: docker build -t "$IMAGEN" ${{ matrix.app }}
+      - name: Entrar al registry
+        if: github.event_name == 'push'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Publicar la imagen
+        if: github.event_name == 'push'
+        run: docker push "$IMAGEN"
+
+  deploy-qa:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: self-hosted
+    environment: qa
+    env:
+      COMPOSE_PROJECT_NAME: expedientes-qa
+      COMPOSE_FILE: compose.deploy.yml
+      PUERTO: 3100
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      APP_USER: ${{ secrets.APP_USER }}
+      APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v6
+      - run: docker compose up -d
+      - run: docker compose images
+      - run: scripts/smoke-test.sh "http://localhost:$PUERTO"
+
+  deploy-production:
+    needs: deploy-qa
+    runs-on: self-hosted
+    environment: production
+    env:
+      COMPOSE_PROJECT_NAME: expedientes-prod
+      COMPOSE_FILE: compose.deploy.yml
+      PUERTO: 3001
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      APP_USER: ${{ secrets.APP_USER }}
+      APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v6
+      - run: docker compose up -d
+      - run: docker compose images
+      - run: scripts/smoke-test.sh "http://localhost:$PUERTO"
