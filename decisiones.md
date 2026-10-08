@@ -351,10 +351,13 @@ exacto que pasó CI.
 ### Aprobación y rechazo
 
 Aprobé las llegadas a PROD revisando que build, QA, integración y e2e
-estuvieran en verde y que QA respondiera. Rechacé el deploy a PROD del merge
-que completa este archivo, con este motivo: «sólo cambia decisiones.md; PROD
-ya corre v7.0.0 (7e74c53) verificado y redesplegarlo no aporta nada». La
-corrida queda en Actions sin llegar a PROD.
+estuvieran en verde y que QA respondiera. En el merge que completó este
+archivo (`a57273d`) quise rechazar y quedó aprobado por error, así que PROD
+recibió un cambio que sólo tocaba documentación. Lo corregí con un rollback
+(«Re-run» de `deploy-qa` en la corrida de `v7.0.0`) y rechacé el deploy del
+merge siguiente, que corrige este párrafo, con este motivo: «sólo cambia
+decisiones.md; PROD ya corre v7.0.0 (7e74c53) verificado y redesplegarlo no
+aporta nada». Esa corrida queda en Actions sin llegar a PROD.
 
 El tag `v6.0.0` apuntaba al principio a un commit que nunca llegó a PROD. Lo
 moví a `471e6b4`, la primera llegada a PROD, antes de entregar. Después de
