@@ -62,8 +62,42 @@ jobs:
       - run: docker compose images
       - run: scripts/smoke-test.sh "http://localhost:$PUERTO"
 
-  deploy-production:
+  integracion:
     needs: deploy-qa
+    runs-on: self-hosted
+    environment: qa
+    env:
+      QA_URL: http://localhost:3100
+      APP_USER: ${{ secrets.APP_USER }}
+      APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v6
+      - run: scripts/playwright.sh e2e/api.spec.js
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-integracion
+          path: frontend/playwright-report
+
+  e2e:
+    needs: integracion
+    runs-on: self-hosted
+    environment: qa
+    env:
+      QA_URL: http://localhost:3100
+      APP_USER: ${{ secrets.APP_USER }}
+      APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v6
+      - run: scripts/playwright.sh e2e/flujos.spec.js
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-e2e
+          path: frontend/playwright-report
+
+  deploy-production:
+    needs: e2e
     runs-on: self-hosted
     environment: production
     env:

@@ -29,3 +29,6 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Reportes de Playwright.
+playwright-report/
+test-results/
