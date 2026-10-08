@@ -1,11 +1,7 @@
-FROM python:3.12 AS build
+FROM python:3.12-slim
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-FROM python:3.12-slim AS runtime
-WORKDIR /app
-COPY --from=build /usr/local /usr/local
+RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 EXPOSE 8000
 CMD ["python", "-m", "app"]

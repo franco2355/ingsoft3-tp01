@@ -1,0 +1,37 @@
+# Lo usan QA y PROD: cada uno es otro proyecto (-p), con su red, su volumen y su PUERTO.
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: expedientes
+      MYSQL_USER: expedientes
+      MYSQL_PASSWORD: ${DB_PASSWORD:?}
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 5s
+      retries: 20
+
+  backend:
+    image: ghcr.io/franco2355/ingsoft3-tp01-backend:sha-${GITHUB_SHA:?}
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD}
+      APP_USER: ${APP_USER:?}
+      APP_PASSWORD: ${APP_PASSWORD:?}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    image: ghcr.io/franco2355/ingsoft3-tp01-frontend:sha-${GITHUB_SHA:?}
+    environment:
+      BACKEND_URL: http://backend:8000
+    ports:
+      - "127.0.0.1:${PUERTO:?}:3000"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

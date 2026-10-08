@@ -1,5 +1,18 @@
 # Decisiones — TP1
 
+## Enlaces de este TP (TP6)
+
+- Paquete backend: <https://github.com/users/franco2355/packages/container/package/ingsoft3-tp01-backend>
+- Paquete frontend: <https://github.com/users/franco2355/packages/container/package/ingsoft3-tp01-frontend>
+- QA y PROD corren en mi VPS (209.126.4.187) y sólo escuchan en su `127.0.0.1`.
+  Se abren con un túnel SSH:
+  `ssh -L 3100:localhost:3100 -L 3001:localhost:3001 lopez@209.126.4.187`
+  - QA: <http://localhost:3100>
+  - PROD: <http://localhost:3001>
+- Corrida de PR con «Entrar al registry» salteado: pendiente hasta publicar esta rama.
+- Corrida de `main` con «Publicar la imagen» como último paso: pendiente hasta
+  publicar esta rama.
+
 ## Resolución del conflicto
 
 Git no pudo resolver el conflicto solo porque las ramas A y B cambiaron la misma línea del `README.md` de formas diferentes. Elegí dejar el título de la versión B y borré los marcadores del conflicto.
@@ -242,3 +255,145 @@ pasaron 8 métodos backend (21 casos parametrizados) y 4 métodos frontend
 fallar el umbral de los dos lados. Después usé Claude Code para simplificar la
 configuración (un solo comando de tests por lado y menos scripts) y repetí esas
 verificaciones.
+
+## TP6 — CD y environments
+
+Estado: código de TP6 preparado; validación remota de QA/PROD y evidencias pendientes.
+Alcance: publicación en GHCR y despliegues con smoke a QA y production.
+Fuente de verdad: `.github/workflows/ci.yml`, `compose.deploy.yml` y
+`scripts/smoke-test.sh` de esta rama. Las comprobaciones locales descritas abajo
+provienen de la documentación existente; no acreditan un despliegue actual en el VPS.
+
+
+### Artefacto verificado
+
+El job `build` es una matriz que corre una vez para el backend y otra para el
+frontend (`build-backend` y `build-frontend`, los checks obligatorios). Cada una
+ejecuta sus tests y umbrales antes de entrar a GHCR. El login y el `push` sólo
+se ejecutan en un evento `push`, y el workflow sólo escucha pushes a `main`; un Pull
+Request verde construye la imagen pero deja esos pasos salteados. La publicación
+es el último paso propio del job y etiqueta la imagen con `sha-<commit>`. Si se
+publicara aun con verificaciones rojas, el registry dejaría de significar
+«artefactos que pasaron el quality gate» y sería sólo un depósito de builds.
+
+### Continuous Delivery y cadena de promoción
+
+Implementé Continuous Delivery: QA se despliega automáticamente después de un
+merge verde, mientras que producción exige una decisión humana. No es
+Continuous Deployment porque no todo cambio aprobado por las máquinas llega a
+PROD sin intervención.
+
+`deploy-qa` declara `needs: build`, que espera las dos corridas de la matriz;
+por eso sólo recibe una imagen cuando backend y frontend terminaron bien. `deploy-production` necesita
+a QA y usa el environment `production`, donde debe vivir el required reviewer.
+Los dos deploys usan la etiqueta `sha-<commit>` de esa corrida, por lo que promueven exactamente
+el commit verificado y no vuelven a construir la aplicación.
+
+Los secrets `DB_PASSWORD`, `APP_USER` y `APP_PASSWORD` se leen desde cada
+environment; la contraseña de root de MySQL la genera el contenedor al azar
+porque la app no la usa.
+Los valores de PROD deben vivir sólo en `production`; así un job de PR o QA no
+puede leerlos. `GITHUB_TOKEN` se usa únicamente para publicar paquetes desde
+los jobs autorizados y nunca se guarda en archivos.
+
+### Configuración por entorno
+
+La imagen del frontend contiene el servidor y los archivos estáticos, pero no
+la dirección de una API. `BACKEND_URL` se lee cuando arranca el contenedor. En
+QA y PROD vale `http://backend:8000`, pero cada proyecto Compose tiene su propia
+red y resuelve a su backend correspondiente. Las credenciales y el tag de imagen
+también llegan por variables; no quedan dentro de las imágenes. QA y PROD usan el
+mismo `compose.deploy.yml`: el job le pasa otro nombre de proyecto (`-p`) y otro
+`PUERTO`. El nombre de la base y su usuario quedan fijos porque no son secretos: el
+aislamiento lo dan el proyecto y el volumen distintos.
+La separación de datos se verificó insertando `AISLAMIENTO-PROD` sólo en MySQL
+de PROD: la consulta devolvió 1 en PROD y 0 en QA.
+
+### Aprobación, VPS y letra chica
+
+Antes de aprobar PROD revisaría que ambos jobs de calidad estén verdes, que el
+smoke de QA responda, que el SHA sea el del merge esperado y que el cambio no
+incluya una migración destructiva. También comprobaría manualmente el flujo
+afectado en QA; el botón de aprobación no reemplaza esa revisión.
+
+Usé mi VPS como nube: el runner self-hosted está instalado ahí y despliega QA
+y PROD con Docker Compose. Lo elegí para no depender de una tarjeta, de un free
+tier ni de tener mi notebook prendida. Los puertos de QA y PROD escuchan sólo en
+`127.0.0.1` del VPS: sin esa aclaración, Docker los publica en todas las
+interfaces y salta el firewall. Para verlos abro un túnel SSH; el smoke no lo
+necesita porque corre en el mismo VPS. El costo es que las URLs no son
+públicas, que QA y PROD comparten servidor (si se cae, se caen los dos) y que
+se sirve por HTTP, sin HTTPS.
+
+El runner del VPS ejecuta lo que diga el workflow y el repositorio es público,
+así que la mitigación es exigir «Require approval for all external contributors»
+en la configuración de Actions y correr el runner con un usuario propio. Ese
+usuario queda en el grupo `docker`, que equivale a ser root en el servidor: por
+eso no acepto Pull Requests de desconocidos.
+
+Letra chica: no hay cold start ni sleep, porque el VPS está siempre encendido y
+los contenedores no se apagan por inactividad. Los jobs de deploy corren en mi
+runner y no consumen minutos de GitHub; los de build corren en runners de
+GitHub, que son gratis en repositorios públicos. Tampoco aplica la pérdida de
+garantía de Render al reconstruir desde Git: el VPS descarga de GHCR el SHA
+exacto que pasó CI.
+
+### Smoke test
+
+El script pide `/healthz` al frontend, hasta 30 veces cada 10 segundos. El frontend reenvía `/healthz` al backend que indica `BACKEND_URL` y
+el backend ejecuta `SELECT 1`, así que una respuesta comprueba frontend, su
+conexión con la API y la base. No demuestra que todas las operaciones funcionen, que el
+contenido sea correcto ni que un usuario pueda completar el flujo de login y
+CRUD; esas comprobaciones necesitan pruebas end-to-end. Tampoco identifica por
+sí solo la versión: esa trazabilidad viene de la etiqueta `sha-<commit>` y del deployment.
+
+### Patrón y rollback
+
+En una producción real elegiría blue-green. Esta aplicación es pequeña y el
+cambio de tráfico permitiría volver rápido a la versión anterior sin mezclar
+instancias de dos versiones. Cuesta mantener dos stacks simultáneos y no
+resuelve una migración de datos incompatible; antes de usarlo faltarían métricas
+de errores, latencia y salud por versión.
+
+El rollback actual consiste en abrir en Actions la corrida de `main` del último
+deployment sano y usar «Re-run» sobre el job `deploy-qa`: GitHub vuelve a correr
+ese job y el de PROD con el SHA de esa corrida, así que se espera el smoke de QA,
+se aprueba production y se confirma su smoke. GitHub sólo deja re-ejecutar
+corridas de los últimos 30 días; para volver más atrás habría que mergear un
+revert. La imagen no se recompila: se vuelve a
+desplegar el artefacto ya verificado. El tiempo todavía no está consignado porque
+la consigna pide medir una corrida real del pipeline y esta implementación no se
+publicó; inventar un número o medir un `compose up` manual no sería evidencia.
+El rollback de código tampoco revierte datos: para eso harían falta migraciones
+compatibles hacia atrás y un procedimiento probado de restauración de backup.
+
+### Problemas encontrados y soluciones
+
+- Para evitar que PROD reemplazara a QA, cada deploy usa otro proyecto de
+  Compose (`expedientes-qa` / `expedientes-prod`, en `COMPOSE_PROJECT_NAME`). Compose antepone ese
+  nombre a la red y al volumen, así que cada entorno tiene su propia base.
+- El healthcheck original hacía `mysqladmin ping` contra `localhost`, que usa el
+  socket y queda verde mientras MySQL todavía se está inicializando. Lo cambié a
+  `-h 127.0.0.1`, que va por TCP como la app, y repetí el arranque con volúmenes
+  vacíos.
+- Dejé de publicar el puerto del backend: el smoke llega a la API por el
+  proxy del frontend, y así QA y PROD no chocan con el backend de desarrollo.
+- Otro proceso local ya usaba el puerto 3000. No lo detuve: asigné el 3100 al
+  frontend de QA y mantuve 3001 para PROD.
+- Evité reconstruir durante el deploy: los jobs descargan las imágenes con el
+  SHA producido por CI y Compose levanta ese tag.
+- La imagen del frontend ya leía `BACKEND_URL` al arrancar; mantuve esa
+  configuración y comprobé que no se hornee una dirección de QA o PROD.
+- Añadí reintentos al smoke porque MySQL y la aplicación pueden tardar en quedar
+  listos aun cuando el comando de despliegue ya terminó.
+
+### Uso de inteligencia artificial
+
+Usé OpenAI Codex para adaptar el fallback de la consigna a los puertos y stack
+de esta aplicación, escribir los Compose, el smoke test, el workflow y revisar
+la separación de secrets. Verifiqué localmente la sintaxis, el aislamiento de
+los proyectos, la construcción de las imágenes y el funcionamiento de ambos
+entornos. Después usé Claude Code para simplificar los Compose, el smoke test y
+el workflow, y repetí el despliegue de prueba de QA y PROD con su smoke. La
+aprobación, el rechazo y la evidencia de Actions siguen pendientes porque
+requieren operar GitHub.
