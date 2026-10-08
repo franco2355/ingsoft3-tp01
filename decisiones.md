@@ -1,5 +1,15 @@
 # Decisiones — TP1
 
+## Enlaces del TP7
+
+- Paquetes, con sus etiquetas `sha-<commit>`: los mismos dos de los enlaces del
+  TP6 (abajo). Pendiente: anotar acá la etiqueta del commit que está en PROD.
+- Commit que rompió la app (cambia el texto del botón «Guardar»): pendiente.
+- Corrida con la integración VERDE y la e2e ROJA: pendiente, junto con sus dos
+  artefactos `playwright-report-integracion` y `playwright-report-e2e`.
+- Corrida completa en verde, hasta PROD: pendiente.
+- QA y PROD: las mismas URLs del TP6, por túnel SSH al VPS.
+
 ## Enlaces de este TP (TP6)
 
 - Paquete backend: <https://github.com/users/franco2355/packages/container/package/ingsoft3-tp01-backend>
@@ -397,3 +407,117 @@ entornos. Después usé Claude Code para simplificar los Compose, el smoke test 
 el workflow, y repetí el despliegue de prueba de QA y PROD con su smoke. La
 aprobación, el rechazo y la evidencia de Actions siguen pendientes porque
 requieren operar GitHub.
+
+## TP7 — Contenedores en el pipeline + integración y e2e
+
+Estado: código de TP7 preparado; ejecución remota de integración/e2e y evidencias pendientes.
+Alcance: pruebas Playwright de API y de interfaz en QA; production depende de e2e.
+Fuente de verdad: `.github/workflows/ci.yml`, `frontend/e2e/`,
+`frontend/playwright.config.js` y `scripts/playwright.sh` de esta rama.
+Las verificaciones locales descritas abajo provienen de la documentación existente;
+no acreditan una corrida actual en el VPS.
+
+
+### Build once, deploy many
+
+La imagen se construye una sola vez, en el job `build`, y se publica como
+`sha-<commit>`. QA y PROD no construyen nada: `compose.deploy.yml` no tiene
+`build:`, sólo `image:` con esa etiqueta, así que hacen `pull` del mismo binario
+que pasó los tests. Si cada entorno reconstruyera, una dependencia que cambió
+entre un build y otro haría que QA y PROD corran cosas distintas con el mismo
+código, que es el problema del escenario.
+
+### Etiquetas y release
+
+- `sha-<commit>` identifica la imagen de un commit; es la que se promueve.
+- `v7.0.0` es un tag de git sobre el commit que está en PROD (el que muestra
+  *Deployments*, no el último de `main`). Del tag a la imagen hay un paso:
+  `git rev-list -n1 v7.0.0` da el commit, y la imagen es `…:sha-<ese commit>`.
+- El pipeline no publica `latest`: es una etiqueta que se mueve sola, así que no
+  dice qué versión corre y un rollback con ella no es reproducible.
+- Una etiqueta se puede mover a mano con un `docker push`; lo único inmutable es
+  el digest. Por eso sólo publica el pipeline, con el `GITHUB_TOKEN` de la
+  corrida, y en el YAML no hay ningún token mío.
+
+### Cómo se comprueba qué imagen corre
+
+Los jobs de deploy ejecutan `docker compose images` después del `up`: el log de
+`deploy-qa` y el de `deploy-production` muestran la misma etiqueta
+`sha-<commit>`. En el VPS, el mismo comando lo dice en vivo. El smoke no
+alcanza: sólo prueba que el entorno responde, no qué versión es ni que la app
+funcione.
+
+### Qué prueba cada suite
+
+- **Integración** (`frontend/e2e/api.spec.js`, sin navegador): alta, búsqueda y
+  baja; alta sin número → 400 sin guardar nada; y un número repetido en el mismo
+  año → 409. Elegí la tercera porque esa regla la aplica la base (clave única),
+  no el código Python: un unitario con un doble del repositorio nunca la vería.
+- **e2e** (`frontend/e2e/flujos.spec.js`, con Chromium): crear un expediente,
+  verlo y borrarlo; un año inválido muestra el error y no se guarda; y buscar
+  un expediente por su número, que es lo que hacen todos los días los que
+  usan la app y que pasa por la base.
+- Cada prueba crea datos con un número que incluye la hora, así no choca con
+  otra corrida, y los borra comprobando que ya no están.
+- Qué dejé afuera: los bordes de cada campo quedan en los unitarios, que son
+  rápidos y baratos; filtros por columna, exportar CSV y editar no tienen e2e
+  porque cada e2e es lenta y frágil, y elegí sólo los flujos críticos (pirámide).
+
+### El par verde/rojo
+
+Lo ensayé en local antes de hacerlo en el pipeline: cambié el texto del botón
+«Guardar» por «Grabar». El smoke quedó verde, la integración verde (la API y la
+base estaban sanas) y la e2e roja, con captura y traza en el reporte. Ese par
+dice quién se rompió sin abrir el código: el front. Si se rompe la API, la
+integración queda roja y la e2e ni corre, por su `needs`. La corrida real va
+en «Enlaces del TP7».
+
+### Integración amplia
+
+Le hablo a la API de QA ya desplegada, con su MySQL de verdad, en vez de
+levantar una base en el job. Gana que prueba la misma imagen, configuración y
+base que después va a PROD. Pierde que necesita QA en pie, es más lenta y
+comparte la base con otras corridas. `QA_URL` apunta al frontend de QA, que
+reenvía `/api/*` sin tocarlo al backend del mismo entorno.
+
+### Timeouts y tests flaky
+
+En el VPS no hay cold start. Playwright espera cada elemento hasta su timeout
+(30 s por test), así que no hay `sleep`. Un test flaky pasa y falla con el mismo
+código; es peor que no tenerlo porque enseña a ignorar el rojo. Por eso no
+configuré reintentos: un fallo se ve como fallo.
+
+### La misma imagen del front en QA y PROD
+
+La imagen del front no sabe dónde está la API: `BACKEND_URL` llega por
+variable al arrancar el contenedor. En cada proyecto de Compose vale
+`http://backend:8000`, que resuelve al backend de su propia red.
+
+### Límite conocido: dos merges seguidos
+
+QA es uno solo. Si la corrida B despliega QA mientras la integración o la e2e
+de la corrida A siguen corriendo, A prueba en parte la imagen de B. Se reconoce
+comparando la hora del `deploy-qa` de B con la de las suites de A en *Actions*.
+En ese caso rechazo la aprobación de A con ese motivo y vale la de B. La regla
+es mergear de a uno mientras la cadena corre.
+
+### Problemas encontrados y soluciones
+
+- Vitest tomaba los archivos de `e2e/` como tests unitarios: limité su
+  `include` a `tests/`.
+- La imagen oficial de Playwright 1.64.0 todavía no estaba publicada: fijé la
+  versión 1.63.0, igual en `package.json` y en `scripts/playwright.sh`.
+- En un runner propio, los archivos que crea un contenedor como root traban el
+  `checkout` de la corrida siguiente: Playwright corre con mi usuario
+  (`--user`).
+- `npm audit` marcó una vulnerabilidad en `source-map-js`, que trae Vitest; la
+  resolví con `npm audit fix`.
+
+### Uso de inteligencia artificial
+
+Usé Claude Code para escribir las dos suites, el script de Playwright y los
+jobs nuevos del workflow. Lo verifiqué levantando un QA de prueba con las
+imágenes `sha-…`: las dos suites pasaron 3 de 3, y al romper el botón
+«Guardar» la integración siguió verde y la e2e se puso roja con captura y
+traza. Puedo explicar qué verifica cada prueba, contra qué entorno corre y qué
+pasa si falla.
