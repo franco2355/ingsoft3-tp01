@@ -2,12 +2,14 @@
 
 ## Enlaces del TP7
 
-- Paquetes, con sus etiquetas `sha-<commit>`: los mismos dos de los enlaces del
-  TP6 (abajo). Pendiente: anotar acá la etiqueta del commit que está en PROD.
-- Commit que rompió la app (cambia el texto del botón «Guardar»): pendiente.
-- Corrida con la integración VERDE y la e2e ROJA: pendiente, junto con sus dos
-  artefactos `playwright-report-integracion` y `playwright-report-e2e`.
-- Corrida completa en verde, hasta PROD: pendiente.
+- Paquetes: los dos del TP6 (abajo). PROD corre la etiqueta
+  `sha-7e74c5393b12667a8fdb95c82dc779f47d5333cf`, la misma que la release
+  [`v7.0.0`](https://github.com/franco2355/ingsoft3-tp01/releases/tag/v7.0.0).
+- Commit que rompió la app (botón «Guardar» → «Grabar»): <https://github.com/franco2355/ingsoft3-tp01/commit/1415f4c7c83fb6ede30518b91fe836abcbda5a26>
+- Corrida con la integración VERDE y la e2e ROJA, sin deploy a PROD: <https://github.com/franco2355/ingsoft3-tp01/actions/runs/37804468902>
+  - `playwright-report-integracion` (verde): <https://github.com/franco2355/ingsoft3-tp01/actions/runs/37804468902/artifacts/11562241461>
+  - `playwright-report-e2e` (rojo, con capturas y trazas): <https://github.com/franco2355/ingsoft3-tp01/actions/runs/37804468902/artifacts/11563370016>
+- Corrida completa en verde hasta PROD, con aprobación: <https://github.com/franco2355/ingsoft3-tp01/actions/runs/37805257316>
 - QA y PROD: las mismas URLs del TP6, por túnel SSH al VPS.
 
 ## Enlaces de este TP (TP6)
@@ -19,9 +21,8 @@
   `ssh -L 3100:localhost:3100 -L 3001:localhost:3001 lopez@209.126.4.187`
   - QA: <http://localhost:3100>
   - PROD: <http://localhost:3001>
-- Corrida de PR con «Entrar al registry» salteado: pendiente hasta publicar esta rama.
-- Corrida de `main` con «Publicar la imagen» como último paso: pendiente hasta
-  publicar esta rama.
+- Corrida de PR con «Entrar al registry» salteado: <https://github.com/franco2355/ingsoft3-tp01/actions/runs/37800252791/job/113390216010>
+- Corrida de `main` con «Publicar la imagen» como último paso: <https://github.com/franco2355/ingsoft3-tp01/actions/runs/37805257316/job/113407754399>
 
 ## Resolución del conflicto
 
@@ -161,11 +162,6 @@ Usé Codex para entender el workflow, el caché de capas y los checks obligatori
 
 ## TP5 — Testing y calidad
 
-Estado: implementación de TP5 preparada; evidencias de los PRs rojo/verde pendientes.
-Alcance: tests unitarios, umbrales, reportes de cobertura y builds en CI.
-Fuente de verdad: `backend/pyproject.toml`, `backend/scripts/check_coverage.py`,
-`frontend/vitest.config.js`, las suites y `.github/workflows/ci.yml` de esta rama.
-
 
 ### Lógica elegida
 
@@ -231,14 +227,24 @@ test lo ejecuta. El número mide lo que ejecutan los tests sobre lo que decidí
 contar, no si la aplicación funciona. Lo mismo pasaría con un test que llame a
 `validar_expediente` sin ningún `assert`: sube la cobertura sin verificar nada.
 
-### Gate y evidencias remotas pendientes
+### El Pull Request bloqueado
 
-El workflow escribe en el resumen del run las líneas y ramas de cada lado y
-publica el reporte HTML de backend y frontend como artefacto descargable. Los umbrales terminan cada job con error antes del build si bajan.
-La secuencia de dos Pull Requests exigida por la consigna —uno rojo que después
-se corrige y otro abierto en rojo— y sus enlaces sólo pueden producirse cuando
-se creen esos PRs de demostración. Los checks `build-backend` y
-`build-frontend` ya son obligatorios en GitHub.
+Los checks `build-backend` y `build-frontend` son obligatorios en `main`. En el
+[PR #25](https://github.com/franco2355/ingsoft3-tp01/pull/25) agregué `antiguedad()` en `domain.py` sin tests: compilaba
+y los 21 tests pasaban, pero
+[`build-backend` quedó rojo](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37800081554) por
+«Umbral de cobertura incumplido»: líneas 83,33% (umbral 90%) y ramas 77,78%
+(umbral 85%). Las tres ramas de la función no las recorría ningún test. Lo
+arreglé con un test parametrizado con 0, 1, 5 y 6 años, que cubre los dos
+bordes de cada `if`; [la corrida quedó verde](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37800252791) y
+lo mergeé. El [PR #26](https://github.com/franco2355/ingsoft3-tp01/pull/26) agrega `plazo_en_dias()` sin tests y queda
+abierto y [en rojo](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37802356403) (líneas 86,05%, ramas
+81,82%): es el freno vigente.
+
+Este freno es distinto del del TP4: aquel sólo se ponía rojo si el código no
+compilaba; éste se pone rojo con código que compila y pasa todos sus tests.
+Lo que sigue dejando pasar es un test que ejecute el código sin verificar
+nada: la cobertura sube igual.
 
 ### Problemas encontrados y soluciones
 
@@ -260,19 +266,13 @@ se creen esos PRs de demostración. Los checks `build-backend` y
 Usé OpenAI Codex para adaptar la consigna a Python y JavaScript, separar la
 lógica testeable, escribir y revisar las suites y preparar el workflow. Verifiqué
 el resultado corriendo las suites en contenedores de Python 3.12 y Node 22:
-pasaron 8 métodos backend (21 casos parametrizados) y 4 métodos frontend
+pasaron 9 métodos backend (25 casos parametrizados) y 4 métodos frontend
 (6 casos parametrizados), el mínimo que pide la consigna. Agregar código sin tests hizo
 fallar el umbral de los dos lados. Después usé Claude Code para simplificar la
 configuración (un solo comando de tests por lado y menos scripts) y repetí esas
 verificaciones.
 
 ## TP6 — CD y environments
-
-Estado: código de TP6 preparado; validación remota de QA/PROD y evidencias pendientes.
-Alcance: publicación en GHCR y despliegues con smoke a QA y production.
-Fuente de verdad: `.github/workflows/ci.yml`, `compose.deploy.yml` y
-`scripts/smoke-test.sh` de esta rama. Las comprobaciones locales descritas abajo
-provienen de la documentación existente; no acreditan un despliegue actual en el VPS.
 
 
 ### Artefacto verificado
@@ -348,6 +348,18 @@ GitHub, que son gratis en repositorios públicos. Tampoco aplica la pérdida de
 garantía de Render al reconstruir desde Git: el VPS descarga de GHCR el SHA
 exacto que pasó CI.
 
+### Aprobación y rechazo
+
+Aprobé las llegadas a PROD revisando que build, QA, integración y e2e
+estuvieran en verde y que QA respondiera. Rechacé el deploy a PROD del merge
+que completa este archivo, con este motivo: «sólo cambia decisiones.md; PROD
+ya corre v7.0.0 (7e74c53) verificado y redesplegarlo no aporta nada». La
+corrida queda en Actions sin llegar a PROD.
+
+El tag `v6.0.0` apuntaba al principio a un commit que nunca llegó a PROD. Lo
+moví a `471e6b4`, la primera llegada a PROD, antes de entregar. Después de
+entregar, un tag no se mueve: deja de nombrar una versión fija.
+
 ### Smoke test
 
 El script pide `/healthz` al frontend, hasta 30 veces cada 10 segundos. El frontend reenvía `/healthz` al backend que indica `BACKEND_URL` y
@@ -371,9 +383,21 @@ ese job y el de PROD con el SHA de esa corrida, así que se espera el smoke de Q
 se aprueba production y se confirma su smoke. GitHub sólo deja re-ejecutar
 corridas de los últimos 30 días; para volver más atrás habría que mergear un
 revert. La imagen no se recompila: se vuelve a
-desplegar el artefacto ya verificado. El tiempo todavía no está consignado porque
-la consigna pide medir una corrida real del pipeline y esta implementación no se
-publicó; inventar un número o medir un `compose up` manual no sería evidencia.
+desplegar el artefacto ya verificado.
+
+Lo hice una vez de verdad, de `1ef3a9f` a `471e6b4`
+([corrida, intento 3](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37789365120)):
+
+| Tramo | Hora | Duración |
+|---|---|---|
+| «Re-run» de `deploy-qa` | 12:40:59 | — |
+| QA + smoke, integración y e2e | 12:41:06 → 12:43:11 | 2 min 5 s |
+| Esperando mi aprobación | 12:43:11 → 12:50:22 | 7 min 11 s |
+| Deploy de PROD + smoke | 12:50:22 → 12:50:55 | 33 s |
+| **Total** | **12:40:59 → 12:50:55** | **9 min 56 s** |
+
+Sin la espera de la aprobación, la máquina tardó 2 min 45 s; casi todo el
+tiempo fue la decisión humana.
 El rollback de código tampoco revierte datos: para eso harían falta migraciones
 compatibles hacia atrás y un procedimiento probado de restauración de backup.
 
@@ -405,17 +429,9 @@ la separación de secrets. Verifiqué localmente la sintaxis, el aislamiento de
 los proyectos, la construcción de las imágenes y el funcionamiento de ambos
 entornos. Después usé Claude Code para simplificar los Compose, el smoke test y
 el workflow, y repetí el despliegue de prueba de QA y PROD con su smoke. La
-aprobación, el rechazo y la evidencia de Actions siguen pendientes porque
-requieren operar GitHub.
+configuración de GitHub, las aprobaciones, el rechazo y el rollback los hice yo.
 
 ## TP7 — Contenedores en el pipeline + integración y e2e
-
-Estado: código de TP7 preparado; ejecución remota de integración/e2e y evidencias pendientes.
-Alcance: pruebas Playwright de API y de interfaz en QA; production depende de e2e.
-Fuente de verdad: `.github/workflows/ci.yml`, `frontend/e2e/`,
-`frontend/playwright.config.js` y `scripts/playwright.sh` de esta rama.
-Las verificaciones locales descritas abajo provienen de la documentación existente;
-no acreditan una corrida actual en el VPS.
 
 
 ### Build once, deploy many
@@ -465,12 +481,17 @@ funcione.
 
 ### El par verde/rojo
 
-Lo ensayé en local antes de hacerlo en el pipeline: cambié el texto del botón
-«Guardar» por «Grabar». El smoke quedó verde, la integración verde (la API y la
-base estaban sanas) y la e2e roja, con captura y traza en el reporte. Ese par
-dice quién se rompió sin abrir el código: el front. Si se rompe la API, la
-integración queda roja y la e2e ni corre, por su `needs`. La corrida real va
-en «Enlaces del TP7».
+En el [commit que rompió la app](https://github.com/franco2355/ingsoft3-tp01/commit/1415f4c7c83fb6ede30518b91fe836abcbda5a26)
+cambié el texto del botón «Guardar» por «Grabar», sin tocar `e2e/`. Ningún
+unitario mira ese botón, así que el build pasó. En
+[la corrida](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37804468902) el smoke quedó verde, la
+integración verde (3 de 3: la API y la base estaban sanas) y la e2e roja: los
+dos flujos que guardan no encontraron el botón y vencieron a los 30 s, con
+captura y traza en el reporte; la búsqueda, que no lo usa, pasó.
+`deploy-production` no arrancó. Ese par dice quién se rompió sin abrir el
+código: el front. Si se rompe la API, la integración queda roja y la e2e ni
+corre, por su `needs`. Lo arreglé volviendo a «Guardar» y
+[la cadena completa quedó verde](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37805257316) hasta PROD.
 
 ### Integración amplia
 
