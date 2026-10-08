@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from app.domain import validar_expediente
+from app.domain import antiguedad, validar_expediente
 
 AHORA = date.today().year
 
@@ -73,3 +73,8 @@ def test_rechaza_texto_opcional_largo(campo, limite):
     _, errores = validar_expediente(expediente)
 
     assert campo in errores
+
+
+@pytest.mark.parametrize(("anios", "esperado"), [(0, "reciente"), (1, "reciente"), (5, "en curso"), (6, "archivo")])
+def test_clasifica_la_antiguedad(anios, esperado):
+    assert antiguedad(AHORA - anios) == esperado
