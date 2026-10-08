@@ -51,3 +51,13 @@ def validar_expediente(datos):
         "detalle": campos_opcionales["detalle"],
         "movimiento": campos_opcionales["movimiento"],
     }, {}
+
+
+def antiguedad(anio):
+    """Clasifica un expediente según cuántos años tiene."""
+    anios = date.today().year - anio
+    if anios <= 1:
+        return "reciente"
+    if anios <= 5:
+        return "en curso"
+    return "archivo"
