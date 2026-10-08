@@ -1,9 +1,4 @@
-import {
-  createApiClient,
-  crearCsv,
-  fechaVisible,
-  filtrarExpedientes,
-} from "./logic.js";
+import { createApiClient, fechaVisible, filtrarExpedientes } from "./logic.js";
 
 const $ = (selector) => document.querySelector(selector);
 const cuerpoTabla = $("#cuerpoTabla");
@@ -169,7 +164,11 @@ function limpiar() {
 }
 
 function exportar() {
-  const csv = crearCsv(visibles);
+  const campos = ["numero", "anio", "acta", "fecha", "protagonista", "dni", "articulos", "detalle", "movimiento"];
+  const cabecera = ["Expte", "Año", "Acta", "Fecha del hecho", "Protagonista", "DNI Nº", "Artículos", "Detalle", "Movimiento"];
+  const csv = [cabecera, ...visibles.map((item) => campos.map((campo) => item[campo] ?? ""))]
+    .map((fila) => fila.map((valor) => `"${String(valor).replaceAll('"', '""')}"`).join(","))
+    .join("\n");
   const enlace = document.createElement("a");
   enlace.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   enlace.download = "expedientes.csv";

@@ -146,35 +146,16 @@ Usá `down -v` solamente cuando realmente quieras borrar la base de datos.
 
 ## Pruebas
 
-Las suites y sus umbrales se ejecutan en etapas de prueba de los mismos
-Dockerfiles que usa CI:
+Los mismos comandos que corre CI, sin instalar Python ni Node en el equipo:
 
 ```bash
-docker build --target test -t expedientes-backend-test ./backend
-docker run --rm expedientes-backend-test
-
-docker build --target test -t expedientes-frontend-test ./frontend
-docker run --rm expedientes-frontend-test
+docker run --rm -v "$PWD/backend:/app" -w /app python:3.12-slim sh -c \
+  "pip install -q -r requirements-dev.txt && python -m pytest && python scripts/check_coverage.py"
+docker run --rm -v "$PWD/frontend:/app" -w /app node:22-alpine sh -c "npm ci && npm test"
 ```
 
-El backend exige 90% de líneas y 85% de ramas. El frontend exige 90% de
-líneas, funciones y sentencias, y 85% de ramas. Un valor inferior termina el
-comando con error.
-
-## Entornos de entrega local
-
-El fallback local de TP6 está documentado en
-[`docs/TP6_LOCAL.md`](docs/TP6_LOCAL.md). Usa la misma imagen etiquetada por SHA
-en dos proyectos Compose aislados:
-
-- QA: frontend en <http://localhost:3100> y backend en
-  <http://localhost:8000>.
-- PROD: frontend en <http://localhost:3001> y backend en
-  <http://localhost:8001>.
-
-Estos entornos son desplegados por los jobs del runner propio definidos en
-`.github/workflows/ci.yml`; levantarlos manualmente sólo sirve como validación
-de la configuración y no reemplaza la evidencia del pipeline.
+Backend y frontend exigen 90% de líneas y 85% de ramas; un valor inferior
+termina el comando con error.
 
 ## Servicios
 

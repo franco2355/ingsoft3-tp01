@@ -1,49 +1,23 @@
-"""Comprueba umbrales separados de líneas y ramas desde coverage.json."""
+"""Falla si la cobertura de líneas o de ramas queda bajo su umbral."""
 
-import argparse
 import json
-import os
-from pathlib import Path
 
+MINIMO_LINEAS = 90
+MINIMO_RAMAS = 85
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("report", type=Path)
-    parser.add_argument("--lines", type=float, required=True)
-    parser.add_argument("--branches", type=float, required=True)
-    return parser.parse_args()
+with open("coverage.json", encoding="utf-8") as archivo:
+    totales = json.load(archivo)["totals"]
 
+lineas = totales["covered_lines"] * 100 / totales["num_statements"]
+ramas = totales["covered_branches"] * 100 / totales["num_branches"]
+resumen = (
+    f"Líneas: {lineas:.2f}% (umbral {MINIMO_LINEAS}%)\n"
+    f"Ramas:  {ramas:.2f}% (umbral {MINIMO_RAMAS}%)\n"
+)
 
-def main():
-    args = parse_args()
-    totals = json.loads(args.report.read_text(encoding="utf-8"))["totals"]
-    lines = float(totals["percent_covered_display"])
-    branches = 100.0
-    if totals["num_branches"]:
-        branches = totals["covered_branches"] * 100 / totals["num_branches"]
+print(resumen, end="")
+with open("coverage/summary.txt", "w", encoding="utf-8") as archivo:
+    archivo.write(resumen)
 
-    summary = (
-        "## Cobertura del backend\n\n"
-        "| Métrica | Resultado | Umbral |\n"
-        "|---|---:|---:|\n"
-        f"| Líneas | {lines:.2f}% | {args.lines:.2f}% |\n"
-        f"| Ramas | {branches:.2f}% | {args.branches:.2f}% |\n"
-    )
-    print(summary)
-
-    summary_path = os.getenv("GITHUB_STEP_SUMMARY")
-    if summary_path:
-        with open(summary_path, "a", encoding="utf-8") as output:
-            output.write(summary)
-
-    failures = []
-    if lines < args.lines:
-        failures.append(f"líneas: {lines:.2f}% < {args.lines:.2f}%")
-    if branches < args.branches:
-        failures.append(f"ramas: {branches:.2f}% < {args.branches:.2f}%")
-    if failures:
-        raise SystemExit("Umbral de cobertura incumplido: " + ", ".join(failures))
-
-
-if __name__ == "__main__":
-    main()
+if lineas < MINIMO_LINEAS or ramas < MINIMO_RAMAS:
+    raise SystemExit("Umbral de cobertura incumplido.")

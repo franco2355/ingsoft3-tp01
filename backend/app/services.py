@@ -1,12 +1,12 @@
 """Casos de uso de expedientes independientes de Flask y de MySQL."""
 
-from .domain import validate_expediente
+from .domain import validar_expediente
 
 
-def create_validated_expediente(payload, storage):
+def crear_expediente_validado(datos, repositorio):
     """Valida un expediente y lo persiste mediante la dependencia recibida."""
-    data, errors = validate_expediente(payload)
-    if errors:
-        return None, errors
+    datos_validos, errores = validar_expediente(datos)
+    if errores:
+        return None, errores
 
-    return storage.create(data), {}
+    return repositorio.crear(datos_validos), {}

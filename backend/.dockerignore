@@ -1,7 +1,4 @@
+tests/
 *.log
 .venv/
 __pycache__/
-.coverage
-coverage.json
-coverage.xml
-htmlcov/

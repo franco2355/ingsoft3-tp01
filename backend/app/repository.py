@@ -1,76 +1,77 @@
-"""Operaciones SQL del agregado Expediente."""
+"""Operaciones SQL de expedientes."""
 
-from .db import connect
+from .db import conectar
 
 
-FIELDS = """id, numero, anio, acta, fecha, protagonista, dni, articulos,
+CAMPOS = """id, numero, anio, acta, fecha, protagonista, dni, articulos,
             detalle, movimiento, creado_en, actualizado_en"""
-EDITABLE_FIELDS = (
+CAMPOS_EDITABLES = (
     "numero", "anio", "acta", "fecha", "protagonista", "dni",
     "articulos", "detalle", "movimiento",
 )
 
 
-def values(data):
-    return tuple(data[field] for field in EDITABLE_FIELDS)
+def valores_editables(datos):
+    return tuple(datos[campo] for campo in CAMPOS_EDITABLES)
 
 
-def list_all(search=""):
-    sql = f"SELECT {FIELDS} FROM expedientes"
-    params = ()
-    if search:
-        sql += """ WHERE numero LIKE %s OR CAST(anio AS CHAR) LIKE %s
-                   OR acta LIKE %s OR fecha LIKE %s OR protagonista LIKE %s
-                   OR dni LIKE %s OR articulos LIKE %s OR detalle LIKE %s
-                   OR movimiento LIKE %s"""
-        term = f"%{search}%"
-        params = (term,) * 9
-    sql += " ORDER BY actualizado_en DESC, id DESC"
+def listar(busqueda=""):
+    consulta = f"SELECT {CAMPOS} FROM expedientes"
+    parametros = ()
+    if busqueda:
+        consulta += """ WHERE numero LIKE %s OR CAST(anio AS CHAR) LIKE %s
+                        OR acta LIKE %s OR fecha LIKE %s OR protagonista LIKE %s
+                        OR dni LIKE %s OR articulos LIKE %s OR detalle LIKE %s
+                        OR movimiento LIKE %s"""
+        termino = f"%{busqueda}%"
+        parametros = (termino,) * 9
+    consulta += " ORDER BY actualizado_en DESC, id DESC"
 
-    with connect() as connection, connection.cursor() as cursor:
-        cursor.execute(sql, params)
+    with conectar() as conexion, conexion.cursor() as cursor:
+        cursor.execute(consulta, parametros)
         return cursor.fetchall()
 
 
-def get_by_id(expediente_id):
-    with connect() as connection, connection.cursor() as cursor:
+def buscar_por_id(id_expediente):
+    with conectar() as conexion, conexion.cursor() as cursor:
         cursor.execute(
-            f"SELECT {FIELDS} FROM expedientes WHERE id = %s",
-            (expediente_id,),
+            f"SELECT {CAMPOS} FROM expedientes WHERE id = %s",
+            (id_expediente,),
         )
         return cursor.fetchone()
 
 
-def create(data):
-    sql = """
+def crear(datos):
+    consulta = """
         INSERT INTO expedientes
             (numero, anio, acta, fecha, protagonista, dni, articulos,
              detalle, movimiento)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
-    with connect() as connection, connection.cursor() as cursor:
-        cursor.execute(sql, values(data))
-        expediente_id = cursor.lastrowid
-        connection.commit()
-    return get_by_id(expediente_id)
+    with conectar() as conexion, conexion.cursor() as cursor:
+        cursor.execute(consulta, valores_editables(datos))
+        id_expediente = cursor.lastrowid
+        conexion.commit()
+    return buscar_por_id(id_expediente)
 
 
-def update(expediente_id, data):
-    sql = """
+def actualizar(id_expediente, datos):
+    consulta = """
         UPDATE expedientes
-        SET numero=%s, anio=%s, acta=%s, fecha=%s, protagonista=%s,
-            dni=%s, articulos=%s, detalle=%s, movimiento=%s
-        WHERE id=%s
+        SET numero = %s, anio = %s, acta = %s, fecha = %s, protagonista = %s,
+            dni = %s, articulos = %s, detalle = %s, movimiento = %s
+        WHERE id = %s
     """
-    with connect() as connection, connection.cursor() as cursor:
-        cursor.execute(sql, (*values(data), expediente_id))
-        connection.commit()
-    return get_by_id(expediente_id)
+    parametros = valores_editables(datos) + (id_expediente,)
+    with conectar() as conexion, conexion.cursor() as cursor:
+        cursor.execute(consulta, parametros)
+        conexion.commit()
+    return buscar_por_id(id_expediente)
 
 
-def delete(expediente_id):
-    with connect() as connection, connection.cursor() as cursor:
-        cursor.execute("DELETE FROM expedientes WHERE id=%s", (expediente_id,))
-        deleted = cursor.rowcount == 1
-        connection.commit()
-    return deleted
+def eliminar(id_expediente):
+    with conectar() as conexion, conexion.cursor() as cursor:
+        cursor.execute("DELETE FROM expedientes WHERE id = %s", (id_expediente,))
+        eliminado = cursor.rowcount == 1
+        conexion.commit()
+    return eliminado

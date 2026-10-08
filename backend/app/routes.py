@@ -5,114 +5,111 @@ import secrets
 from flask import Blueprint, jsonify, request
 from pymysql.err import IntegrityError
 
-from . import repository
-from .db import connect
-from .config import settings
-from .services import create_validated_expediente
+from . import config
+from . import repository as repositorio
+from .db import conectar
+from .domain import validar_expediente
+from .services import crear_expediente_validado
 
 
 api = Blueprint("api", __name__)
-active_tokens = set()
+tokens_activos = set()
 
 
-def current_token():
-    authorization = request.headers.get("Authorization", "")
-    if not authorization.startswith("Bearer "):
+def token_actual():
+    autorizacion = request.headers.get("Authorization", "")
+    if not autorizacion.startswith("Bearer "):
         return ""
-    return authorization.removeprefix("Bearer ").strip()
-
-
-def require_login():
-    if request.path.startswith("/api/expedientes"):
-        if current_token() not in active_tokens:
-            return jsonify(error="Tenés que iniciar sesión."), 401
-    return None
+    return autorizacion.removeprefix("Bearer ").strip()
 
 
 @api.before_request
-def protect_expedientes():
-    return require_login()
+def exigir_login():
+    ruta_protegida = request.path.startswith("/api/expedientes")
+    sesion_invalida = token_actual() not in tokens_activos
+    if ruta_protegida and sesion_invalida:
+        return jsonify(error="Tenés que iniciar sesión."), 401
 
 
-def response(expediente):
+def preparar_respuesta(expediente):
     if not expediente:
         return None
-    result = dict(expediente)
-    for field in ("creado_en", "actualizado_en"):
-        result[field] = result[field].isoformat()
-    return result
+    resultado = dict(expediente)
+    for campo in ("creado_en", "actualizado_en"):
+        resultado[campo] = resultado[campo].isoformat()
+    return resultado
 
 
 @api.get("/healthz")
-def health():
-    with connect() as connection, connection.cursor() as cursor:
+def estado():
+    with conectar() as conexion, conexion.cursor() as cursor:
         cursor.execute("SELECT 1")
     return jsonify(ok=True, service="backend")
 
 
 @api.post("/api/login")
-def login():
-    payload = request.get_json(silent=True) or {}
-    user = str(payload.get("user", ""))
-    password = str(payload.get("password", ""))
+def iniciar_sesion():
+    datos = request.get_json(silent=True) or {}
+    usuario = str(datos.get("user", ""))
+    clave = str(datos.get("password", ""))
 
-    if not settings.app_user or not settings.app_password:
+    if not config.USUARIO_APP or not config.CLAVE_APP:
         return jsonify(error="El acceso no está configurado."), 503
 
-    valid_user = secrets.compare_digest(user, settings.app_user)
-    valid_password = secrets.compare_digest(password, settings.app_password)
-    if not valid_user or not valid_password:
+    usuario_valido = secrets.compare_digest(usuario, config.USUARIO_APP)
+    clave_valida = secrets.compare_digest(clave, config.CLAVE_APP)
+    if not usuario_valido or not clave_valida:
         return jsonify(error="Usuario o contraseña incorrectos."), 401
 
     token = secrets.token_urlsafe(32)
-    active_tokens.add(token)
-    return jsonify(token=token, user=settings.app_user)
+    tokens_activos.add(token)
+    return jsonify(token=token, user=config.USUARIO_APP)
 
 
 @api.post("/api/logout")
-def logout():
-    active_tokens.discard(current_token())
+def cerrar_sesion():
+    tokens_activos.discard(token_actual())
     return "", 204
 
 
 @api.get("/api/expedientes")
-def list_expedientes():
-    search = request.args.get("buscar", "").strip()
-    return jsonify([response(item) for item in repository.list_all(search)])
+def listar_expedientes():
+    busqueda = request.args.get("buscar", "").strip()
+    expedientes = repositorio.listar(busqueda)
+    return jsonify([preparar_respuesta(expediente) for expediente in expedientes])
 
 
 @api.post("/api/expedientes")
-def create_expediente():
+def crear_expediente():
+    datos = request.get_json(silent=True) or {}
     try:
-        created, errors = create_validated_expediente(
-            request.get_json(silent=True) or {},
-            repository,
-        )
+        creado, errores = crear_expediente_validado(datos, repositorio)
     except IntegrityError:
         return jsonify(error="Ya existe ese número de expediente para el año indicado."), 409
-    if errors:
-        return jsonify(errors=errors), 400
-    return jsonify(response(created)), 201
+    if errores:
+        return jsonify(errors=errores), 400
+    return jsonify(preparar_respuesta(creado)), 201
 
 
-@api.put("/api/expedientes/<int:expediente_id>")
-def update_expediente(expediente_id):
-    current = repository.get_by_id(expediente_id)
-    if not current:
+@api.put("/api/expedientes/<int:id_expediente>")
+def actualizar_expediente(id_expediente):
+    actual = repositorio.buscar_por_id(id_expediente)
+    if not actual:
         return jsonify(error="Expediente inexistente."), 404
 
-    data, errors = validate_expediente(request.get_json(silent=True) or {})
-    if errors:
-        return jsonify(errors=errors), 400
+    entrada = request.get_json(silent=True) or {}
+    datos, errores = validar_expediente(entrada)
+    if errores:
+        return jsonify(errors=errores), 400
     try:
-        updated = repository.update(expediente_id, data)
+        actualizado = repositorio.actualizar(id_expediente, datos)
     except IntegrityError:
         return jsonify(error="Ya existe ese número de expediente para el año indicado."), 409
-    return jsonify(response(updated))
+    return jsonify(preparar_respuesta(actualizado))
 
 
-@api.delete("/api/expedientes/<int:expediente_id>")
-def delete_expediente(expediente_id):
-    if not repository.delete(expediente_id):
+@api.delete("/api/expedientes/<int:id_expediente>")
+def eliminar_expediente(id_expediente):
+    if not repositorio.eliminar(id_expediente):
         return jsonify(error="Expediente inexistente."), 404
     return "", 204

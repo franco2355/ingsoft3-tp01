@@ -1,13 +1,7 @@
-FROM node:22-alpine AS dependencies
+FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
-
-FROM dependencies AS test
-COPY . .
-CMD ["npm", "run", "test:coverage"]
-
-FROM dependencies AS build
 COPY . .
 RUN npm run build
 

@@ -5,60 +5,19 @@ export function fechaVisible(value) {
 }
 
 export function filtrarExpedientes(items, filtros) {
-  if (!Array.isArray(items)) {
-    throw new TypeError("La lista de expedientes debe ser un arreglo.");
-  }
-
-  const activos = Object.entries(filtros)
-    .map(([campo, valor]) => [campo, String(valor ?? "").trim().toLowerCase()])
-    .filter(([, valor]) => valor);
-
+  if (!Array.isArray(items)) throw new TypeError("La lista de expedientes debe ser un arreglo.");
+  const activos = Object.entries(filtros).filter(([, valor]) => valor.trim());
   return items.filter((item) => activos.every(([campo, buscado]) => (
-    String(item[campo] ?? "").toLowerCase().includes(buscado)
+    String(item[campo] ?? "").toLowerCase().includes(buscado.trim().toLowerCase())
   )));
 }
 
-export function crearCsv(items) {
-  const campos = [
-    "numero",
-    "anio",
-    "acta",
-    "fecha",
-    "protagonista",
-    "dni",
-    "articulos",
-    "detalle",
-    "movimiento",
-  ];
-  const cabecera = [
-    "Expte",
-    "Año",
-    "Acta",
-    "Fecha del hecho",
-    "Protagonista",
-    "DNI Nº",
-    "Artículos",
-    "Detalle",
-    "Movimiento",
-  ];
-
-  return [cabecera, ...items.map((item) => campos.map((campo) => item[campo] ?? ""))]
-    .map((fila) => fila.map((valor) => `"${String(valor).replaceAll('"', '""')}"`).join(","))
-    .join("\n");
-}
-
 export function createApiClient({ fetchImpl, getToken, onUnauthorized }) {
-  if (typeof fetchImpl !== "function") {
-    throw new TypeError("Se necesita una función para realizar solicitudes.");
-  }
-
   return async function apiFetch(url, options = {}) {
-    const headers = new Headers(options.headers || {});
-    const token = getToken?.();
-    if (token) headers.set("Authorization", `Bearer ${token}`);
-
+    const headers = new Headers(options.headers);
+    headers.set("Authorization", `Bearer ${getToken()}`);
     const response = await fetchImpl(url, { ...options, headers });
-    if (response.status === 401) onUnauthorized?.();
+    if (response.status === 401) onUnauthorized();
     return response;
   };
 }
