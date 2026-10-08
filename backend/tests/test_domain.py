@@ -1,45 +1,75 @@
-import unittest
 from datetime import date
 
-from app.domain import validate_expediente
+import pytest
+
+from app.domain import validar_expediente
+
+AHORA = date.today().year
 
 
-class ValidateExpedienteTest(unittest.TestCase):
-    def valid(self, **changes):
-        payload = {
-            "numero": "123-A",
-            "anio": date.today().year,
-            "protagonista": "Persona de prueba",
-            "detalle": "Ingreso inicial",
-        }
-        payload.update(changes)
-        return payload
-
-    def test_accepts_valid_payload(self):
-        data, errors = validate_expediente(self.valid())
-        self.assertFalse(errors)
-        self.assertEqual(data["numero"], "123-A")
-
-    def test_rejects_empty_number(self):
-        _, errors = validate_expediente(self.valid(numero=""))
-        self.assertIn("numero", errors)
-
-    def test_rejects_old_year(self):
-        _, errors = validate_expediente(self.valid(anio=1899))
-        self.assertIn("anio", errors)
-
-    def test_rejects_far_future_year(self):
-        _, errors = validate_expediente(self.valid(anio=date.today().year + 2))
-        self.assertIn("anio", errors)
-
-    def test_rejects_empty_person(self):
-        _, errors = validate_expediente(self.valid(protagonista=" "))
-        self.assertIn("protagonista", errors)
-
-    def test_rejects_long_optional_field(self):
-        _, errors = validate_expediente(self.valid(movimiento="x" * 256))
-        self.assertIn("movimiento", errors)
+def valido():
+    return {"numero": "123-A", "anio": AHORA, "protagonista": "Ana"}
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_acepta_un_expediente_valido_y_recorta_espacios():
+    expediente = valido()
+    expediente["numero"] = " 123-A "
+    expediente["protagonista"] = " Ana "
+
+    datos, errores = validar_expediente(expediente)
+
+    assert errores == {}
+    assert (datos["numero"], datos["protagonista"]) == ("123-A", "Ana")
+
+
+@pytest.mark.parametrize("numero", ["", "   ", "X" * 31])
+def test_rechaza_numero_invalido(numero):
+    expediente = valido()
+    expediente["numero"] = numero
+
+    _, errores = validar_expediente(expediente)
+
+    assert "numero" in errores
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor"),
+    [("anio", 1900), ("anio", AHORA + 1), ("numero", "X" * 30), ("protagonista", "P" * 120), ("acta", "x" * 60)],
+)
+def test_acepta_los_valores_justo_en_el_borde(campo, valor):
+    expediente = valido()
+    expediente[campo] = valor
+
+    _, errores = validar_expediente(expediente)
+
+    assert errores == {}
+
+
+@pytest.mark.parametrize("anio", [1899, AHORA + 2, None, "no-es-un-año"])
+def test_rechaza_anio_invalido(anio):
+    expediente = valido()
+    expediente["anio"] = anio
+
+    _, errores = validar_expediente(expediente)
+
+    assert "anio" in errores
+
+
+@pytest.mark.parametrize("protagonista", ["", " ", "P" * 121])
+def test_rechaza_protagonista_invalido(protagonista):
+    expediente = valido()
+    expediente["protagonista"] = protagonista
+
+    _, errores = validar_expediente(expediente)
+
+    assert "protagonista" in errores
+
+
+@pytest.mark.parametrize(("campo", "limite"), [("acta", 60), ("dni", 20), ("movimiento", 255)])
+def test_rechaza_texto_opcional_largo(campo, limite):
+    expediente = valido()
+    expediente[campo] = "x" * (limite + 1)
+
+    _, errores = validar_expediente(expediente)
+
+    assert campo in errores

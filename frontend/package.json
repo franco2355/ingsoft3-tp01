@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "check": "node --check src/app.js"
+    "test": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "5.0.2",
+    "vitest": "5.0.2"
   }
 }

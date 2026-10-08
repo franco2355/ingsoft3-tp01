@@ -1,0 +1,8 @@
+[tool.pytest.ini_options]
+addopts = "--cov --cov-report=term-missing --cov-report=json --cov-report=html:coverage"
+
+[tool.coverage.run]
+branch = true
+source = ["app"]
+# Fuera de la cuenta: arranque, configuración e infraestructura (MySQL y Flask).
+omit = ["app/__init__.py", "app/__main__.py", "app/config.py", "app/db.py", "app/repository.py", "app/routes.py"]

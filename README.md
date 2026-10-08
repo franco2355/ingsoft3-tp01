@@ -146,12 +146,16 @@ Usá `down -v` solamente cuando realmente quieras borrar la base de datos.
 
 ## Pruebas
 
+Los mismos comandos que corre CI, sin instalar Python ni Node en el equipo:
+
 ```bash
-docker run --rm -v "$PWD/backend:/app" -w /app python:3.12 \
-  sh -c "pip install -r requirements.txt && python -m unittest discover -s tests"
-docker run --rm -v "$PWD/frontend:/app" -w /app node:22-alpine \
-  npm run check
+docker run --rm -v "$PWD/backend:/app" -w /app python:3.12-slim sh -c \
+  "pip install -q -r requirements-dev.txt && python -m pytest && python scripts/check_coverage.py"
+docker run --rm -v "$PWD/frontend:/app" -w /app node:22-alpine sh -c "npm ci && npm test"
 ```
+
+Backend y frontend exigen 90% de líneas y 85% de ramas; un valor inferior
+termina el comando con error.
 
 ## Servicios
 
