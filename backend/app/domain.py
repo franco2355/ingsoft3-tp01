@@ -3,7 +3,7 @@
 from datetime import date
 
 
-TEXT_LIMITS = {
+LIMITES_TEXTO = {
     "acta": 60,
     "fecha": 10,
     "dni": 20,
@@ -13,41 +13,41 @@ TEXT_LIMITS = {
 }
 
 
-def validate_expediente(payload):
-    errors = {}
-    numero = str(payload.get("numero", "")).strip()
-    protagonista = str(payload.get("protagonista", "")).strip()
-    optional = {
-        field: str(payload.get(field, "")).strip()
-        for field in TEXT_LIMITS
+def validar_expediente(datos):
+    errores = {}
+    numero = str(datos.get("numero", "")).strip()
+    protagonista = str(datos.get("protagonista", "")).strip()
+    campos_opcionales = {
+        campo: str(datos.get(campo, "")).strip()
+        for campo in LIMITES_TEXTO
     }
 
     try:
-        anio = int(payload.get("anio"))
+        anio = int(datos.get("anio"))
     except (TypeError, ValueError):
-        anio = 0
+        anio = None
 
     if not numero or len(numero) > 30:
-        errors["numero"] = "Debe tener entre 1 y 30 caracteres."
-    if anio < 1900 or anio > date.today().year + 1:
-        errors["anio"] = "El año está fuera del rango permitido."
+        errores["numero"] = "Debe tener entre 1 y 30 caracteres."
+    if anio is None or anio < 1900 or anio > date.today().year + 1:
+        errores["anio"] = "El año está fuera del rango permitido."
     if not protagonista or len(protagonista) > 120:
-        errors["protagonista"] = "Debe tener entre 1 y 120 caracteres."
-    for field, limit in TEXT_LIMITS.items():
-        if len(optional[field]) > limit:
-            errors[field] = f"No puede superar los {limit} caracteres."
+        errores["protagonista"] = "Debe tener entre 1 y 120 caracteres."
+    for campo, limite in LIMITES_TEXTO.items():
+        if len(campos_opcionales[campo]) > limite:
+            errores[campo] = f"No puede superar los {limite} caracteres."
 
-    if errors:
-        return None, errors
+    if errores:
+        return None, errores
 
     return {
         "numero": numero,
         "anio": anio,
-        "acta": optional["acta"],
-        "fecha": optional["fecha"],
+        "acta": campos_opcionales["acta"],
+        "fecha": campos_opcionales["fecha"],
         "protagonista": protagonista,
-        "dni": optional["dni"],
-        "articulos": optional["articulos"],
-        "detalle": optional["detalle"],
-        "movimiento": optional["movimiento"],
+        "dni": campos_opcionales["dni"],
+        "articulos": campos_opcionales["articulos"],
+        "detalle": campos_opcionales["detalle"],
+        "movimiento": campos_opcionales["movimiento"],
     }, {}

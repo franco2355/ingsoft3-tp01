@@ -10,6 +10,12 @@ build/
 # Caché y bytecode generados por Python.
 __pycache__/
 *.py[cod]
+.pytest_cache/
+.coverage
+coverage.json
+
+# Reportes de cobertura del frontend.
+coverage/
 
 # Secretos y configuraciones locales.
 .env

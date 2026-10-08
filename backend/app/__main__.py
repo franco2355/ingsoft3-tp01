@@ -2,15 +2,15 @@
 
 from waitress import serve
 
-from . import create_app
-from .config import settings
-from .db import init_database
+from . import config
+from . import crear_app
+from .db import inicializar_base
 
 
-def main():
-    init_database()
-    serve(create_app(), host="0.0.0.0", port=settings.app_port)
+def iniciar():
+    inicializar_base()
+    serve(crear_app(), host="0.0.0.0", port=config.PUERTO_APP)
 
 
 if __name__ == "__main__":
-    main()
+    iniciar()

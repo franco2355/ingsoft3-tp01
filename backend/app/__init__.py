@@ -3,18 +3,18 @@
 from flask import Flask, jsonify
 
 
-def create_app():
+def crear_app():
     from .routes import api
 
-    app = Flask(__name__)
-    app.register_blueprint(api)
+    aplicacion = Flask(__name__)
+    aplicacion.register_blueprint(api)
 
-    @app.errorhandler(404)
-    def not_found(_error):
+    @aplicacion.errorhandler(404)
+    def recurso_inexistente(_error):
         return jsonify(error="Recurso inexistente."), 404
 
-    @app.errorhandler(500)
-    def internal_error(_error):
+    @aplicacion.errorhandler(500)
+    def error_interno(_error):
         return jsonify(error="Error interno del servidor."), 500
 
-    return app
+    return aplicacion

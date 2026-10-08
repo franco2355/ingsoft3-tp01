@@ -3,7 +3,7 @@
 import pymysql
 from pymysql.cursors import DictCursor
 
-from .config import settings
+from . import config
 
 
 DEMO_EXPEDIENTES = (
@@ -12,7 +12,7 @@ DEMO_EXPEDIENTES = (
     ("DEMO-003", 2026, "21/26", "2026-08-25", "Persona Demo C", "", "", "Expediente ficticio.", "Resuelto"),
 )
 
-EXTRA_COLUMNS = {
+COLUMNAS_EXTRA = {
     "acta": "VARCHAR(60) NOT NULL DEFAULT ''",
     "fecha": "VARCHAR(10) NOT NULL DEFAULT ''",
     "dni": "VARCHAR(20) NOT NULL DEFAULT ''",
@@ -21,21 +21,21 @@ EXTRA_COLUMNS = {
 }
 
 
-def connect():
+def conectar():
     return pymysql.connect(
-        host=settings.db_host,
-        port=settings.db_port,
-        user=settings.db_user,
-        password=settings.db_password,
-        database=settings.db_name,
+        host=config.HOST_DB,
+        port=config.PUERTO_DB,
+        user=config.USUARIO_DB,
+        password=config.CLAVE_DB,
+        database=config.NOMBRE_DB,
         cursorclass=DictCursor,
         charset="utf8mb4",
         autocommit=False,
     )
 
 
-def init_database():
-    schema = """
+def inicializar_base():
+    esquema = """
         CREATE TABLE IF NOT EXISTS expedientes (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             numero VARCHAR(30) NOT NULL,
@@ -53,15 +53,15 @@ def init_database():
             UNIQUE KEY uq_expediente (numero, anio)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     """
-    with connect() as connection:
-        with connection.cursor() as cursor:
-            cursor.execute(schema)
+    with conectar() as conexion:
+        with conexion.cursor() as cursor:
+            cursor.execute(esquema)
             cursor.execute("SHOW COLUMNS FROM expedientes")
-            existing_columns = {column["Field"] for column in cursor.fetchall()}
-            for name, definition in EXTRA_COLUMNS.items():
-                if name not in existing_columns:
+            columnas_existentes = {columna["Field"] for columna in cursor.fetchall()}
+            for nombre, definicion in COLUMNAS_EXTRA.items():
+                if nombre not in columnas_existentes:
                     cursor.execute(
-                        f"ALTER TABLE expedientes ADD COLUMN {name} {definition}"
+                        f"ALTER TABLE expedientes ADD COLUMN {nombre} {definicion}"
                     )
             cursor.execute("SELECT COUNT(*) AS total FROM expedientes")
             if cursor.fetchone()["total"] == 0:
@@ -74,4 +74,4 @@ def init_database():
                     """,
                     DEMO_EXPEDIENTES,
                 )
-        connection.commit()
+        conexion.commit()
