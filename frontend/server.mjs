@@ -14,10 +14,11 @@ const contentTypes = {
 };
 
 function proxyToBackend(request, response) {
-  const target = new URL(request.url, backend);
+  const path = new URL(request.url, "http://localhost");
   const proxy = requestBackend(
-    target,
+    backend,
     {
+      path: path.pathname + path.search,
       method: request.method,
       headers: { ...request.headers, host: backend.host },
     },
@@ -63,7 +64,21 @@ async function servePage(request, response) {
   createReadStream(filePath).pipe(response);
 }
 
-createServer((request, response) => {
+const server = createServer((request, response) => {
+  if (request.url === "/sentry-config.js") {
+    const config = {
+      dsn: process.env.SENTRY_DSN_FRONTEND || "",
+      environment: process.env.SENTRY_ENVIRONMENT || "local",
+      release: process.env.SENTRY_RELEASE || undefined,
+    };
+    response.writeHead(200, {
+      "Content-Type": "application/javascript; charset=utf-8",
+      "Cache-Control": "no-store",
+    });
+    response.end(`window.sentryConfig = ${JSON.stringify(config)};`);
+    return;
+  }
+
   if (request.url.startsWith("/api/") || request.url === "/healthz") {
     proxyToBackend(request, response);
     return;
@@ -74,5 +89,5 @@ createServer((request, response) => {
     response.end("Error interno");
   });
 }).listen(port, "0.0.0.0", () => {
-  console.log(`Frontend disponible en el puerto ${port}`);
+  console.log(`Frontend disponible en el puerto ${server.address().port}`);
 });

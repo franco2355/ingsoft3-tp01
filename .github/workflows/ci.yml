@@ -56,6 +56,8 @@ jobs:
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       APP_USER: ${{ secrets.APP_USER }}
       APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+      SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      SENTRY_DSN_FRONTEND: ${{ secrets.SENTRY_DSN_FRONTEND }}
     steps:
       - uses: actions/checkout@v6
       - run: docker compose up -d
@@ -107,6 +109,8 @@ jobs:
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       APP_USER: ${{ secrets.APP_USER }}
       APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+      SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      SENTRY_DSN_FRONTEND: ${{ secrets.SENTRY_DSN_FRONTEND }}
     steps:
       - uses: actions/checkout@v6
       - run: docker compose up -d

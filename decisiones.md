@@ -1,5 +1,41 @@
 # Decisiones — TP1
 
+## TP9 — Seguridad y observación
+
+Estado: configuración de GitHub activa e integración de Sentry validada localmente;
+faltan las cuentas y las mediciones reales de producción para cerrar `v9.0.0`.
+Alcance: observar la aplicación que sigue alojada en el VPS.
+Fuente de verdad: GitHub Security, el pipeline y los paneles externos del TP9.
+
+Activé las alertas y las actualizaciones de seguridad de Dependabot, CodeQL por
+defecto y verifiqué push protection. El PR de Dependabot
+[#32](https://github.com/franco2355/ingsoft3-tp01/pull/32) actualiza pytest de 8.4.2
+a 9.0.3 y corrige una vulnerabilidad de manejo de directorios temporales.
+La actualización afecta a la herramienta de tests. Revisé el cambio de versión y
+su CI verde: las pruebas y los umbrales de cobertura verifican su compatibilidad.
+
+CodeQL señaló un posible SSRF en el proxy del frontend. Fijé el destino en
+`BACKEND_URL` y agregué un test que comprueba que una ruta normalizada con `//`
+no cambia ese host. Sentry se configura al arrancar, sin hornear datos de PROD en
+la imagen; el DSN del front es público y el del back se lee del entorno.
+Comprobé con receptores de prueba un error y una transacción tanto en Flask como
+en un navegador real, filtrando cuerpos, tokens y búsquedas.
+
+El VPS había reiniciado y QA/PROD estaban detenidos. Los recuperé, verifiqué sus
+health y configuré `restart: unless-stopped`. El health de PROD acepta HEAD y
+consulta MySQL. Está preparado un virtual host Nginx que expone solamente
+`/healthz`, pendiente de instalar con sudo; la aplicación conserva su acceso por túnel.
+
+Pendiente de medir: demora de la alerta DOWN/UP, operación más usada y más lenta,
+y tarjeta del tablero nacida de uno de esos datos. No se inventaron valores ni se
+publicó `v9.0.0` sin verificar los paneles reales.
+
+### Uso de inteligencia artificial
+
+Codex preparó la configuración y el código, revisó la actualización de Dependabot
+y ejecutó tests, builds y pruebas de instrumentación. La verificación local de
+Sentry no reemplaza la comprobación pendiente en producción.
+
 ## TP8 — Preprod con Terraform y Docker
 
 Estado: validado en el VPS el 25/10/2026.

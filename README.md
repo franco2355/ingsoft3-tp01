@@ -160,6 +160,7 @@ termina el comando con error.
 ## Servicios
 
 Preprod del TP8: [infra/README.md](infra/README.md).
+Seguridad y observación del TP9: [docs/tp9.md](docs/tp9.md).
 
 | Servicio | Tecnología | Puerto local |
 |---|---|---:|
