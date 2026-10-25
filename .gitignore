@@ -32,3 +32,12 @@ Thumbs.db
 # Reportes de Playwright.
 playwright-report/
 test-results/
+
+# Terraform: el lockfile sí se versiona; el estado y las credenciales, no.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+*.tfplan
+crash.log

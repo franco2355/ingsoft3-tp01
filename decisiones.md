@@ -1,5 +1,31 @@
 # Decisiones — TP1
 
+## TP8 — Preprod con Terraform y Docker
+
+Estado: validado en el VPS el 25/10/2026.
+Alcance: entorno nuevo `expedientes-preprod`, independiente de QA y PROD.
+Fuente de verdad: `infra/` y su estado local fuera del checkout.
+
+Elegí el plan C porque la aplicación ya corre en Docker en mi VPS. Uso Terraform
+1.17.0 y el provider `kreuzwerker/docker` fijado en 4.6.0, con su lockfile versionado.
+Preprod ejecuta las imágenes `sha-7e74c5393b12667a8fdb95c82dc779f47d5333cf`
+del TP7, en su propia red, volumen y puerto local 3200. Las conexiones se derivan
+de los recursos; no se copian direcciones ni credenciales al HCL.
+
+El estado está en `~/.local/state/expedientes-preprod/terraform.tfstate`, y las
+variables sensibles en `~/.config/expedientes-preprod/terraform.tfvars` del VPS.
+Quedan fuera del checkout y del repositorio. Los healthchecks esperan a que MySQL
+y la API estén listos, porque crear un contenedor no garantiza que pueda atender.
+
+Comprobé `apply`, un segundo plan sin cambios y `destroy → apply`. Antes y después
+funcionaron health GET/HEAD, frontend, login y alta/búsqueda/baja de un expediente.
+QA y PROD conservaron sus contenedores y siguieron respondiendo sanos durante el ciclo.
+
+### Uso de inteligencia artificial
+
+Codex preparó el HCL, el lockfile y esta documentación, y ejecutó la validación real
+en el VPS. La comprobación incluyó la base, la aplicación y la recreación completa.
+
 ## Enlaces del TP7
 
 - Paquetes: los dos del TP6 (abajo). PROD corre la etiqueta
