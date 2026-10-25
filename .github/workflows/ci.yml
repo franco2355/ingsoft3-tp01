@@ -26,7 +26,7 @@ jobs:
     env:
       IMAGEN: ghcr.io/franco2355/ingsoft3-tp01-${{ matrix.app }}:sha-${{ github.sha }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: docker run --rm -v "$PWD/${{ matrix.app }}:/app" -w /app ${{ matrix.image }} sh -c "${{ matrix.test }}"
       - if: always()
         run: |
@@ -59,7 +59,7 @@ jobs:
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       SENTRY_DSN_FRONTEND: ${{ secrets.SENTRY_DSN_FRONTEND }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: docker compose up -d
       - run: docker compose images
       - run: scripts/smoke-test.sh "http://localhost:$PUERTO"
@@ -73,7 +73,7 @@ jobs:
       APP_USER: ${{ secrets.APP_USER }}
       APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: scripts/playwright.sh e2e/api.spec.js
       - if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v6
@@ -90,7 +90,7 @@ jobs:
       APP_USER: ${{ secrets.APP_USER }}
       APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: scripts/playwright.sh e2e/flujos.spec.js
       - if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v6
@@ -112,7 +112,7 @@ jobs:
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       SENTRY_DSN_FRONTEND: ${{ secrets.SENTRY_DSN_FRONTEND }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: docker compose up -d
       - run: docker compose images
       - run: scripts/smoke-test.sh "http://localhost:$PUERTO"
