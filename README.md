@@ -159,6 +159,8 @@ termina el comando con error.
 
 ## Servicios
 
+Preprod del TP8: [infra/README.md](infra/README.md).
+
 | Servicio | Tecnología | Puerto local |
 |---|---|---:|
 | `frontend` | Node.js 22 | `3000` |
