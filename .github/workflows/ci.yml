@@ -32,7 +32,7 @@ jobs:
         run: |
           { echo '```'; cat ${{ matrix.app }}/coverage/summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.app }}
           path: ${{ matrix.app }}/coverage
@@ -76,7 +76,7 @@ jobs:
       - uses: actions/checkout@v6
       - run: scripts/playwright.sh e2e/api.spec.js
       - if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-integracion
           path: frontend/playwright-report
@@ -93,7 +93,7 @@ jobs:
       - uses: actions/checkout@v6
       - run: scripts/playwright.sh e2e/flujos.spec.js
       - if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-e2e
           path: frontend/playwright-report
