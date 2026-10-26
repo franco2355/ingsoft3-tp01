@@ -184,13 +184,13 @@ La cobertura muestra qué líneas ejecutaron los tests y cuántos caminos recorr
 
 Configuré el pipeline para que falle si la cobertura baja del 90% de líneas o del 85% de caminos, porque esos mínimos detectan una función agregada sin pruebas sin exigir el 100% en todos los casos
 
-En el backend llegué al 100% de líneas y caminos, mientras que en el frontend llegué al 100% de líneas y a 10 de los 11 caminos, que es el 90,9%
+En el backend llegué al 100% de líneas y caminos, mientras que en el frontend llegué al 100% de líneas y a 14 de los 15 caminos, que es el 93,33%
 
 Estos porcentajes corresponden solamente a `domain.py` y `services.py` en el backend y a `src/logic.js` en el frontend, ya que las rutas, la conexión real con MySQL y la interfaz quedan fuera de las pruebas unitarias y las compruebo con la integración y las e2e
 
 ### Camino sin cubrir
 
-En `src/logic.js:20` quedó sin cubrir el caso en que `response.status === 401` da falso, es decir cuando la respuesta tiene otro código
+En `src/logic.js:24` quedó sin cubrir el caso en que `response.status === 401` da falso, es decir cuando la respuesta tiene otro código
 
 Para probarlo podría simular una respuesta con otro código, por ejemplo un error 500, y comprobar que no se ejecute `onUnauthorized`, ya que ese callback corresponde sólo al 401, pero no lo agregué en esta entrega y quedó como prueba pendiente porque la cobertura sigue por encima del mínimo
 

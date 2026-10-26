@@ -4,12 +4,16 @@ export function fechaVisible(value) {
   return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : String(value);
 }
 
-export function filtrarExpedientes(items, filtros) {
-  if (!Array.isArray(items)) throw new TypeError("La lista de expedientes debe ser un arreglo.");
-  const activos = Object.entries(filtros).filter(([, valor]) => valor.trim());
-  return items.filter((item) => activos.every(([campo, buscado]) => (
-    String(item[campo] ?? "").toLowerCase().includes(buscado.trim().toLowerCase())
-  )));
+export function filtrarExpedientes(expedientes, filtros) {
+  if (!Array.isArray(expedientes)) throw new TypeError("La lista de expedientes debe ser un arreglo.");
+  return expedientes.filter((expediente) => {
+    for (const campo in filtros) {
+      const buscado = filtros[campo].trim().toLowerCase(); //tolower hace minuscula y trim saca espacio
+      const valor = String(expediente[campo] ?? "").toLowerCase();
+      if (buscado && !valor.includes(buscado)) return false;
+    }
+    return true;
+  });
 }
 
 export function createApiClient({ fetchImpl, getToken, onUnauthorized }) {

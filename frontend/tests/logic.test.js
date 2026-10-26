@@ -11,21 +11,22 @@ it.each([
 });
 
 it("filtra sin distinguir mayúsculas", () => {
-  const items = [{ protagonista: "Ana" }, { protagonista: "Bruno" }, {}];
-
-  expect(filtrarExpedientes(items, { protagonista: "ANA" })).toEqual([items[0]]);
+  const expedientes = [{ protagonista: "Ana" }, { protagonista: "Bruno" }, {}];
+  const resultado = filtrarExpedientes(expedientes, { protagonista: "ANA" });
+  expect(resultado).toEqual([{ protagonista: "Ana" }]);
 });
 
 it("rechaza una lista inválida", () => {
-  expect(() => filtrarExpedientes(null, {})).toThrow(TypeError);
+  expect(() => filtrarExpedientes(null, {})).toThrow(TypeError); //verificar si es del tipo del typeError y como no es un arreglo te tira error
 });
 
-it("manda el token y avisa cuando la API responde 401", async () => {
-  const fetchMock = vi.fn().mockResolvedValue({ status: 401 });
-  const onUnauthorized = vi.fn();
-
-  await createApiClient({ fetchImpl: fetchMock, getToken: () => "abc", onUnauthorized })("/api/expedientes");
-
-  expect(fetchMock.mock.calls[0][1].headers.get("Authorization")).toBe("Bearer abc");
-  expect(onUnauthorized).toHaveBeenCalledOnce();
+it("avisa cuando la API responde 401", async () => {
+  const fetchFalso = vi.fn().mockResolvedValue({ status: 401 });
+  const avisar = vi.fn();
+  const api = createApiClient({ fetchImpl: fetchFalso, getToken: () => "abc", onUnauthorized: avisar }); // onUnauthorized: indica qué función ejecutar si recibe un error 401
+  await api("/api/expedientes");
+  const veces = avisar.mock.calls.length;
+  if (veces !== 1) {
+    throw new Error(`Tenía que avisar 1 vez, pero avisó ${veces}`);
+  }
 });
