@@ -1,7 +1,7 @@
 output "url" {
-  value = "http://localhost:${docker_container.frontend.ports[0].external}"
+  value = "http://localhost:${var.port}"
 }
 
 output "health_url" {
-  value = "http://localhost:${docker_container.frontend.ports[0].external}/healthz"
+  value = "http://localhost:${var.port}/healthz"
 }

@@ -10,6 +10,18 @@ async function ingresar(page) {
   await expect(page.locator("#btnNuevo")).toBeVisible();
 }
 
+async function crear(page, numero) {
+  await page.click("#btnNuevo");
+  await page.fill("#numero", numero);
+  await page.fill("#protagonista", "Prueba e2e");
+  await page.getByRole("button", { name: "Guardar" }).click();
+}
+
+async function borrar(page, numero) {
+  page.once("dialog", (confirmacion) => confirmacion.accept());
+  await page.locator("tr", { hasText: numero }).getByRole("button", { name: "Eliminar expediente" }).click();
+}
+
 async function buscar(page, texto) {
   await page.fill("#busqueda", texto);
   await page.click("#btnBuscar");
@@ -17,49 +29,36 @@ async function buscar(page, texto) {
 
 test("crear un expediente, verlo y borrarlo", async ({ page }) => {
   const numero = `E2E-${Date.now()}`;
-  await ingresar(page);
-
-  await page.click("#btnNuevo");
-  await page.fill("#numero", numero);
-  await page.fill("#protagonista", "Prueba e2e");
-  await page.getByRole("button", { name: "Guardar" }).click();
   const fila = page.locator("tr", { hasText: numero });
+  await ingresar(page);
+  await crear(page, numero);
   await expect(fila).toBeVisible();
-
-  page.once("dialog", (confirmacion) => confirmacion.accept());
-  await fila.getByRole("button", { name: "Eliminar expediente" }).click();
+  await borrar(page, numero);
   await expect(fila).toHaveCount(0);
 });
 
 test("un año inválido muestra el error y no guarda nada", async ({ page }) => {
   const numero = `E2E-${Date.now()}`;
   await ingresar(page);
-
   await page.click("#btnNuevo");
   await page.fill("#numero", numero);
   await page.fill("#anio", "3000");
   await page.fill("#protagonista", "Prueba e2e");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.locator("#formError")).toContainText("año");
-
   await page.click("#btnCancelar");
   await buscar(page, numero);
   await expect(page.getByText("No hay expedientes para mostrar")).toBeVisible();
 });
 
-test("buscar un expediente por su número", async ({ page, request }) => {
+test("buscar un expediente por su número", async ({ page }) => {
   const numero = `E2E-${Date.now()}`;
-  const login = await request.post("/api/login", {
-    data: { user: process.env.APP_USER, password: process.env.APP_PASSWORD },
-  });
-  const headers = { Authorization: `Bearer ${(await login.json()).token}` };
-  const alta = await request.post("/api/expedientes", { headers, data: { numero, anio: 2026, protagonista: "Prueba e2e" } });
+  const fila = page.locator("tr", { hasText: numero });
   await ingresar(page);
-
+  await crear(page, numero);
   await buscar(page, numero);
-  await expect(page.locator("tr", { hasText: numero })).toHaveCount(1);
-
-  await request.delete(`/api/expedientes/${(await alta.json()).id}`, { headers });
-  await buscar(page, numero);
-  await expect(page.locator("tr", { hasText: numero })).toHaveCount(0);
+  await expect(page.locator("#cuerpoTabla tr")).toHaveCount(1);
+  await expect(fila).toBeVisible();
+  await borrar(page, numero);
+  await expect(fila).toHaveCount(0);
 });
