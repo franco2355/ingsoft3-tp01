@@ -1,70 +1,8 @@
 # Decisiones — TP1
 
-## TP9 — Seguridad y observación
-
-Estado: configuración de GitHub activa e integración de Sentry validada localmente;
-faltan las cuentas y las mediciones reales de producción para cerrar `v9.0.0`.
-Alcance: observar la aplicación que sigue alojada en el VPS.
-Fuente de verdad: GitHub Security, el pipeline y los paneles externos del TP9.
-
-Activé las alertas y las actualizaciones de seguridad de Dependabot, CodeQL por
-defecto y verifiqué push protection. El PR de Dependabot
-[#32](https://github.com/franco2355/ingsoft3-tp01/pull/32) actualiza pytest de 8.4.2
-a 9.0.3 y corrige una vulnerabilidad de manejo de directorios temporales.
-La actualización afecta a la herramienta de tests. Revisé el cambio de versión y
-su CI verde: las pruebas y los umbrales de cobertura verifican su compatibilidad.
-
-CodeQL señaló un posible SSRF en el proxy del frontend. Fijé el destino en
-`BACKEND_URL` y agregué un test que comprueba que una ruta normalizada con `//`
-no cambia ese host. Sentry se configura al arrancar, sin hornear datos de PROD en
-la imagen; el DSN del front es público y el del back se lee del entorno.
-Comprobé con receptores de prueba un error y una transacción tanto en Flask como
-en un navegador real, filtrando cuerpos, tokens y búsquedas.
-
-El VPS había reiniciado y QA/PROD estaban detenidos. Los recuperé, verifiqué sus
-health y configuré `restart: unless-stopped`. El health de PROD acepta HEAD y
-consulta MySQL. Está preparado un virtual host Nginx que expone solamente
-`/healthz`, pendiente de instalar con sudo; la aplicación conserva su acceso por túnel.
-
-Pendiente de medir: demora de la alerta DOWN/UP, operación más usada y más lenta,
-y tarjeta del tablero nacida de uno de esos datos. No se inventaron valores ni se
-publicó `v9.0.0` sin verificar los paneles reales.
-
-### Uso de inteligencia artificial
-
-Codex preparó la configuración y el código, revisó la actualización de Dependabot
-y ejecutó tests, builds y pruebas de instrumentación. La verificación local de
-Sentry no reemplaza la comprobación pendiente en producción.
-
-## TP8 — Preprod con Terraform y Docker
-
-Estado: validado en el VPS el 25/10/2026.
-Alcance: entorno nuevo `expedientes-preprod`, independiente de QA y PROD.
-Fuente de verdad: `infra/` y su estado local fuera del checkout.
-
-Elegí el plan C porque la aplicación ya corre en Docker en mi VPS. Uso Terraform
-1.17.0 y el provider `kreuzwerker/docker` fijado en 4.6.0, con su lockfile versionado.
-Preprod ejecuta las imágenes `sha-7e74c5393b12667a8fdb95c82dc779f47d5333cf`
-del TP7, en su propia red, volumen y puerto local 3200. Las conexiones se derivan
-de los recursos; no se copian direcciones ni credenciales al HCL.
-
-El estado está en `~/.local/state/expedientes-preprod/terraform.tfstate`, y las
-variables sensibles en `~/.config/expedientes-preprod/terraform.tfvars` del VPS.
-Quedan fuera del checkout y del repositorio. Los healthchecks esperan a que MySQL
-y la API estén listos, porque crear un contenedor no garantiza que pueda atender.
-
-Comprobé `apply`, un segundo plan sin cambios y `destroy → apply`. Antes y después
-funcionaron health GET/HEAD, frontend, login y alta/búsqueda/baja de un expediente.
-QA y PROD conservaron sus contenedores y siguieron respondiendo sanos durante el ciclo.
-
-### Uso de inteligencia artificial
-
-Codex preparó el HCL, el lockfile y esta documentación, y ejecutó la validación real
-en el VPS. La comprobación incluyó la base, la aplicación y la recreación completa.
-
 ## Enlaces del TP7
 
-- Paquetes: los dos del TP6 (abajo). PROD corre la etiqueta
+- Paquetes: los dos del TP6 (abajo). Al cerrar el TP7, PROD corría la etiqueta
   `sha-7e74c5393b12667a8fdb95c82dc779f47d5333cf`, la misma que la release
   [`v7.0.0`](https://github.com/franco2355/ingsoft3-tp01/releases/tag/v7.0.0).
 - Commit que rompió la app (botón «Guardar» → «Grabar»): <https://github.com/franco2355/ingsoft3-tp01/commit/1415f4c7c83fb6ede30518b91fe836abcbda5a26>
@@ -133,7 +71,7 @@ La elegí porque:
   ejemplo.
 - El backend espera a que MySQL esté listo mediante el `healthcheck` antes de
   intentar conectarse.
-- Las imágenes finales se publicaron en GHCR con el tag semántico `v0.1.0`. El
+- Las imágenes finales se publicaron en GitHub Container Registry con el tag semántico `v0.1.0`. El
   archivo `docker-compose.registry.yml` usa esas imágenes y no contiene bloques
   `build`. Las dos son públicas y la variante se probó descargándolas sin una
   sesión iniciada en el registry.
@@ -149,7 +87,7 @@ La elegí porque:
   configuración anterior, entonces actualicé el `.env` y los recreé.
 - El frontend original tenía funciones que no necesitaba para el TP, entonces
   mantuve el diseño principal y simplifiqué la lógica usando una API Flask.
-- GHCR creó inicialmente los paquetes como privados. Se cambió la visibilidad
+- GitHub Container Registry creó inicialmente los paquetes como privados. Se cambió la visibilidad
   de ambos a pública desde la configuración de GitHub y luego se repitió la
   descarga sin autenticación.
 - Codex me ayudo a entender algunos comandos como por ejemplo:
@@ -224,386 +162,297 @@ Usé Codex para entender el workflow, el caché de capas y los checks obligatori
 
 ## TP5 — Testing y calidad
 
+### Qué probé
 
-### Lógica elegida
+En el backend probé las validaciones del número, el año, el protagonista y el largo de los campos opcionales, porque son las que evitan que se guarden expedientes con datos incorrectos en MySQL
 
-En el backend probé la validación de número, año, protagonista y longitudes de
-los campos opcionales. Son reglas que protegen los datos antes de escribirlos
-en MySQL; un cambio incorrecto en un borde permitiría guardar expedientes
-inválidos. También separé el caso de uso `crear_expediente_validado` para
-inyectarle la persistencia. El test con `unittest.mock.Mock` comprueba que un
-expediente válido se guarda una sola vez y que uno inválido nunca llega a la
-base.
+Separé `crear_expediente_validado` para probarlo con un `Mock` que simula el acceso a la base de datos, y así comprobé que un expediente válido se intenta guardar una sola vez y que uno inválido se rechaza antes de llegar a la base
 
-En el frontend extraje a `src/logic.js` el formato de fechas, el filtrado y el
-cliente HTTP. Los tests usan `it.each`, incluyen entradas
-inválidas y reemplazan `fetch` con `vi.fn()`. Así se comprueba el encabezado de
-autorización y la reacción ante un `401` sin salir a la red.
+En el frontend separé en `src/logic.js` las funciones de fechas, filtros y peticiones, y usé `vi.fn()` para simular las respuestas de la API, incluyendo el error 401 cuando el usuario no está autorizado
 
-### Mi stack frente al de la cátedra
+### Herramientas
 
-| Lo que pide la consigna | Backend (Python) | Frontend (JavaScript) |
-|---|---|---|
-| Test parametrizado | `@pytest.mark.parametrize` | `it.each` |
-| Doble de prueba | `unittest.mock.Mock` | `vi.fn()` |
-| Medidor de cobertura | `pytest-cov` (coverage.py, con ramas) | `@vitest/coverage-v8` |
-| Umbral que frena el build | `scripts/check_coverage.py` | `thresholds` en `vitest.config.js` |
-| Qué entra en la cuenta | `omit` en `pyproject.toml` | `include` en `vitest.config.js` |
+Como el proyecto usa Python y JavaScript, adapté las herramientas de la consigna a cada parte
 
-### Cobertura y umbrales
+En el backend usé `@pytest.mark.parametrize`, `Mock` y `pytest-cov`, mientras que el mínimo de cobertura lo controla `scripts/check_coverage.py` y los archivos que no se cuentan están en la lista `omit` de `pyproject.toml`
 
-- Backend: umbral de 90% de líneas y 85% de ramas. Medición local actual: 100%
-  de líneas y 100% de ramas.
-- Frontend: el mismo umbral, 90% de líneas y 85% de ramas. Medición local
-  actual: 100% de líneas y 90,9% de ramas.
+En el frontend usé `it.each`, `vi.fn()` y `@vitest/coverage-v8`, y tanto los mínimos como los archivos que entran en la cobertura están configurados en `vitest.config.js`
 
-Elegí umbrales algo menores que la medición actual para permitir refactors
-pequeños, pero suficientemente altos para que agregar lógica sin tests rompa el
-build. Para subirlos debería cubrir primero las ramas opcionales que no pueden
-ocurrir desde la interfaz normal y después sostener ese nivel en cada cambio.
+### Cuánto código prueban los tests
 
-El backend deja fuera del cálculo el arranque, la configuración, la conexión y
-el repositorio SQL, y las rutas Flask. Son cableado o infraestructura; la cuenta
-se concentra en `domain.py` y `services.py`, donde están las reglas y casos de
-uso. El frontend incluye `src/logic.js`; deja fuera `app.js`, `login.js`, el
-servidor y el script de build porque contienen integración con DOM, HTTP o
-empaquetado y corresponden a pruebas de integración o end-to-end.
+La cobertura muestra qué líneas ejecutaron los tests y cuántos caminos recorrieron, por ejemplo cuando una condición se cumple y cuando no
 
-### Camino sin cubrir observado
+Configuré el pipeline para que falle si la cobertura baja del 90% de líneas o del 85% de caminos, porque esos mínimos detectan una función agregada sin pruebas sin exigir el 100% en todos los casos
 
-El reporte de ramas señaló el `if (response.status === 401)` de
-`src/logic.js:20`: ningún test recorre el camino en el que la API responde
-otra cosa, por ejemplo un `200`. La entrada concreta que lo recorrería es un
-`fetchImpl` simulado que devuelva `{ status: 200 }`, comprobando que
-`onUnauthorized` no se llama. Decidí no agregarla: es el camino normal, lo
-ejercita cada pantalla de la app, y con la cobertura actual (90,9% de ramas)
-el umbral se cumple. Sí dejé el caso de un expediente sin el campo filtrado,
-porque puede aparecer al leer datos históricos incompletos.
+En el backend llegué al 100% de líneas y caminos, mientras que en el frontend llegué al 100% de líneas y a 10 de los 11 caminos, que es el 90,9%
 
-### Por qué coverage alto no garantiza calidad
+Estos porcentajes corresponden solamente a `domain.py` y `services.py` en el backend y a `src/logic.js` en el frontend, ya que las rutas, la conexión real con MySQL y la interfaz quedan fuera de las pruebas unitarias y las compruebo con la integración y las e2e
 
-Me pasó en este TP: al extraer `crear_expediente_validado` borré un import que
-usaba la edición de expedientes (`PUT`), y la app respondía 500 al editar. La
-cobertura seguía en 100% porque `routes.py` está fuera de la cuenta y ningún
-test lo ejecuta. El número mide lo que ejecutan los tests sobre lo que decidí
-contar, no si la aplicación funciona. Lo mismo pasaría con un test que llame a
-`validar_expediente` sin ningún `assert`: sube la cobertura sin verificar nada.
+### Camino sin cubrir
 
-### El Pull Request bloqueado
+En `src/logic.js:20` quedó sin cubrir el caso en que `response.status === 401` da falso, es decir cuando la respuesta tiene otro código
 
-Los checks `build-backend` y `build-frontend` son obligatorios en `main`. En el
-[PR #25](https://github.com/franco2355/ingsoft3-tp01/pull/25) agregué `antiguedad()` en `domain.py` sin tests: compilaba
-y los 21 tests pasaban, pero
-[`build-backend` quedó rojo](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37800081554) por
-«Umbral de cobertura incumplido»: líneas 83,33% (umbral 90%) y ramas 77,78%
-(umbral 85%). Las tres ramas de la función no las recorría ningún test. Lo
-arreglé con un test parametrizado con 0, 1, 5 y 6 años, que cubre los dos
-bordes de cada `if`; [la corrida quedó verde](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37800252791) y
-lo mergeé. El [PR #26](https://github.com/franco2355/ingsoft3-tp01/pull/26) agrega `plazo_en_dias()` sin tests y queda
-abierto y [en rojo](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37802356403) (líneas 86,05%, ramas
-81,82%): es el freno vigente.
+Para probarlo podría simular una respuesta con otro código, por ejemplo un error 500, y comprobar que no se ejecute `onUnauthorized`, ya que ese callback corresponde sólo al 401, pero no lo agregué en esta entrega y quedó como prueba pendiente porque la cobertura sigue por encima del mínimo
 
-Este freno es distinto del del TP4: aquel sólo se ponía rojo si el código no
-compilaba; éste se pone rojo con código que compila y pasa todos sus tests.
-Lo que sigue dejando pasar es un test que ejecute el código sin verificar
-nada: la cobertura sube igual.
+En cambio, sí probé que el filtro funcione cuando un expediente no tiene el dato buscado, agregando un expediente vacío y comprobando que el filtro lo deje afuera sin producir un error
+
+### Por qué una cobertura alta no garantiza calidad
+
+Al separar `crear_expediente_validado` borré por error un import que también usaba la edición, por lo que editar un expediente daba error 500 aunque los tests pasaban y la cobertura del backend seguía en 100%
+
+Esto pasó porque `routes.py` no estaba incluido en la cobertura y ninguna prueba unitaria recorría esa operación, así que la cobertura solamente indica qué código se ejecutó y no que todo funcione, e incluso un test sin comprobaciones puede aumentarla
+
+### Pull Requests bloqueados
+
+En el [PR #25](https://github.com/franco2355/ingsoft3-tp01/pull/25) agregué `antiguedad()` sin tests, y aunque el código compilaba y los 21 tests pasaban, [`build-backend` quedó en rojo](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37800081554) porque la cobertura bajó al 83,33% de líneas y al 77,78% de caminos
+
+Después agregué un test parametrizado con 0, 1, 5 y 6 años para comprobar los valores límite, y [el pipeline quedó en verde](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37800252791), con el resumen de cobertura y los reportes para descargar, así que pude hacer el merge
+
+En el [PR #26](https://github.com/franco2355/ingsoft3-tp01/pull/26) agregué `plazo_en_dias()` sin tests y lo dejé abierto y [en rojo](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37802356403) hasta la defensa, con 86,05% de líneas y 81,82% de caminos
+
+A diferencia del TP4, el pipeline ahora también rechaza cambios que compilan y pasan los tests existentes pero no cumplen los mínimos de cobertura
 
 ### Problemas encontrados y soluciones
 
-- Ejecutar `pytest` directamente no encontraba el paquete `app`. Lo cambié por
-  `python -m pytest`, que agrega el directorio de trabajo al path de módulos.
-- Al extraer `crear_expediente_validado` borré el import de
-  `validar_expediente` que todavía usaba la edición (`PUT`), que pasó a
-  responder 500. Ningún test lo detectó porque `routes.py` está fuera de la
-  cuenta y no tiene tests: la cobertura seguía en 100%. Repuse el import y
-  comprobé la edición contra la app levantada.
-- El primer script de umbral leía el porcentaje total de coverage.py como si
-  fuera el de líneas, pero con ramas activadas ese total mezcla las dos
-  métricas. Ahora calcula líneas y ramas por separado.
-- La versión anterior de Vitest tenía avisos de seguridad. Actualicé Vitest y su
-  proveedor de cobertura a 5.0.2; `npm audit` quedó sin vulnerabilidades.
+- `pytest` no encontraba el paquete `app`, entonces ejecuté los tests con `python -m pytest`
+- Al separar la lógica borré un import y la edición daba error 500, así que lo restauré y comprobé la edición desde la aplicación
+- El primer script de cobertura mezclaba líneas y caminos, por lo que lo corregí para calcular cada porcentaje por separado
+- Vitest tenía avisos de seguridad, entonces lo actualicé a la versión 5.0.2 y comprobé el resultado con `npm audit`
 
 ### Uso de inteligencia artificial
 
-Usé OpenAI Codex para adaptar la consigna a Python y JavaScript, separar la
-lógica testeable, escribir y revisar las suites y preparar el workflow. Verifiqué
-el resultado corriendo las suites en contenedores de Python 3.12 y Node 22:
-pasaron 9 métodos backend (25 casos parametrizados) y 4 métodos frontend
-(6 casos parametrizados), el mínimo que pide la consigna. Agregar código sin tests hizo
-fallar el umbral de los dos lados. Después usé Claude Code para simplificar la
-configuración (un solo comando de tests por lado y menos scripts) y repetí esas
-verificaciones.
+Usé OpenAI Codex para adaptar la consigna a Python y JavaScript, separar funciones y preparar los tests y el workflow, y Claude Code para simplificar la configuración
+
+Comprobé el funcionamiento ejecutando las pruebas con Python 3.12 y Node 22, y agregué funciones sin tests para verificar que el pipeline fallara cuando la cobertura bajaba del mínimo
 
 ## TP6 — CD y environments
 
-
 ### Artefacto verificado
 
-El job `build` es una matriz que corre una vez para el backend y otra para el
-frontend (`build-backend` y `build-frontend`, los checks obligatorios). Cada una
-ejecuta sus tests y umbrales antes de entrar a GHCR. El login y el `push` sólo
-se ejecutan en un evento `push`, y el workflow sólo escucha pushes a `main`; un Pull
-Request verde construye la imagen pero deja esos pasos salteados. La publicación
-es el último paso propio del job y etiqueta la imagen con `sha-<commit>`. Si se
-publicara aun con verificaciones rojas, el registry dejaría de significar
-«artefactos que pasaron el quality gate» y sería sólo un depósito de builds.
+Los jobs `build-backend` y `build-frontend` ejecutan los tests unitarios y comprueban la cobertura antes de publicar las imágenes en GitHub Container Registry con la etiqueta `sha-<commit>`
 
-### Continuous Delivery y cadena de promoción
+En los PR las imágenes se construyen para comprobar que funcionan pero no se publican, ya que la publicación sólo ocurre con un push a `main` y después de que las comprobaciones terminan bien
 
-Implementé Continuous Delivery: QA se despliega automáticamente después de un
-merge verde, mientras que producción exige una decisión humana. No es
-Continuous Deployment porque no todo cambio aprobado por las máquinas llega a
-PROD sin intervención.
+Así evito publicar imágenes que no pasaron los tests y la cobertura, mientras que la integración y las e2e se ejecutan después sobre QA, antes de permitir el despliegue a producción
 
-`deploy-qa` declara `needs: build`, que espera las dos corridas de la matriz;
-por eso sólo recibe una imagen cuando backend y frontend terminaron bien. `deploy-production` necesita
-a QA y usa el environment `production`, donde debe vivir el required reviewer.
-Los dos deploys usan la etiqueta `sha-<commit>` de esa corrida, por lo que promueven exactamente
-el commit verificado y no vuelven a construir la aplicación.
+### Continuous Delivery
 
-Los secrets `DB_PASSWORD`, `APP_USER` y `APP_PASSWORD` se leen desde cada
-environment; la contraseña de root de MySQL la genera el contenedor al azar
-porque la app no la usa.
-Los valores de PROD deben vivir sólo en `production`; así un job de PR o QA no
-puede leerlos. `GITHUB_TOKEN` se usa únicamente para publicar paquetes desde
-los jobs autorizados y nunca se guarda en archivos.
+Elegí Continuous Delivery y no Continuous Deployment porque, después de un merge, QA se despliega automáticamente pero producción necesita mi aprobación
 
-### Configuración por entorno
+El pipeline sigue el orden `build → deploy-qa → integracion → e2e → deploy-production`, y el último job usa el environment `production`, que pide aprobación y sólo acepta despliegues desde `main`
 
-La imagen del frontend contiene el servidor y los archivos estáticos, pero no
-la dirección de una API. `BACKEND_URL` se lee cuando arranca el contenedor. En
-QA y PROD vale `http://backend:8000`, pero cada proyecto Compose tiene su propia
-red y resuelve a su backend correspondiente. Las credenciales y el tag de imagen
-también llegan por variables; no quedan dentro de las imágenes. QA y PROD usan el
-mismo `compose.deploy.yml`: el job le pasa otro nombre de proyecto (`-p`) y otro
-`PUERTO`. El nombre de la base y su usuario quedan fijos porque no son secretos: el
-aislamiento lo dan el proyecto y el volumen distintos.
-La separación de datos se verificó insertando `AISLAMIENTO-PROD` sólo en MySQL
-de PROD: la consulta devolvió 1 en PROD y 0 en QA.
+Además QA y producción usan las imágenes del mismo commit, por lo que no se reconstruyen en cada despliegue
 
-### Aprobación, VPS y letra chica
+### Entornos en el VPS
 
-Antes de aprobar PROD revisaría que ambos jobs de calidad estén verdes, que el
-smoke de QA responda, que el SHA sea el del merge esperado y que el cambio no
-incluya una migración destructiva. También comprobaría manualmente el flujo
-afectado en QA; el botón de aprobación no reemplaza esa revisión.
+En lugar de Render usé un VPS propio, que es el fallback local de la consigna, es decir un servidor alquilado en Contabo, porque ya tenía el servidor funcionando con Docker, así que QA y producción corren con Docker Compose y los despliegues los hace un runner self-hosted, que es el programa de GitHub Actions instalado en el VPS que ejecuta los jobs ahí
 
-Usé mi VPS como nube: el runner self-hosted está instalado ahí y despliega QA
-y PROD con Docker Compose. Lo elegí para no depender de una tarjeta, de un free
-tier ni de tener mi notebook prendida. Los puertos de QA y PROD escuchan sólo en
-`127.0.0.1` del VPS: sin esa aclaración, Docker los publica en todas las
-interfaces y salta el firewall. Para verlos abro un túnel SSH; el smoke no lo
-necesita porque corre en el mismo VPS. El costo es que las URLs no son
-públicas, que QA y PROD comparten servidor (si se cae, se caen los dos) y que
-se sirve por HTTP, sin HTTPS.
+Los dos entornos usan `compose.deploy.yml`, pero cada uno tiene su propio nombre de proyecto, puerto, variables y base de datos
 
-El runner del VPS ejecuta lo que diga el workflow y el repositorio es público,
-así que la mitigación es exigir «Require approval for all external contributors»
-en la configuración de Actions y correr el runner con un usuario propio. Ese
-usuario queda en el grupo `docker`, que equivale a ser root en el servidor: por
-eso no acepto Pull Requests de desconocidos.
+El frontend de cada entorno escucha solamente en `127.0.0.1`, por lo que no se pueden abrir desde internet y entro con un túnel SSH, que lleva esos puertos del VPS a mi computadora, y aunque la aplicación usa HTTP, el túnel cifra la conexión entre mi computadora y el VPS
 
-Letra chica: no hay cold start ni sleep, porque el VPS está siempre encendido y
-los contenedores no se apagan por inactividad. Los jobs de deploy corren en mi
-runner y no consumen minutos de GitHub; los de build corren en runners de
-GitHub, que son gratis en repositorios públicos. Tampoco aplica la pérdida de
-garantía de Render al reconstruir desde Git: el VPS descarga de GHCR el SHA
-exacto que pasó CI.
+Como el VPS está siempre encendido, los servicios no se suspenden por inactividad ni tengo el límite de horas de una plataforma gratuita, y además el servidor descarga las imágenes del registry en lugar de construirlas
+
+La desventaja es que los dos entornos dependen del mismo servidor, entonces si el VPS falla QA y producción se caen al mismo tiempo
+
+Las credenciales `DB_PASSWORD`, `APP_USER` y `APP_PASSWORD` son secrets de cada environment y los valores de producción sólo están en `production`, mientras que la contraseña root de MySQL se genera automáticamente y `GITHUB_TOKEN` publica las imágenes
+
+El frontend recibe `BACKEND_URL` al arrancar y en ambos entornos vale `http://backend:8000`, pero como cada uno tiene su propia red de Docker, cada frontend se comunica con su backend
+
+Para comprobar que las bases estaban separadas inserté `AISLAMIENTO-PROD` únicamente en producción, y la consulta devolvió un resultado en PROD y ninguno en QA
+
+### Seguridad del runner
+
+El runner self-hosted ejecuta los comandos de los workflows y tiene acceso al servidor, y como el repositorio es público configuré la aprobación de contribuciones externas y le di un usuario propio, aunque ese usuario está en el grupo `docker`, que tiene muchos permisos sobre el servidor
+
+Por eso los tests de los PR corren en las máquinas de GitHub y el runner del VPS sólo ejecuta los despliegues, que se disparan con un push a `main`
 
 ### Aprobación y rechazo
 
-Aprobé las llegadas a PROD revisando que build, QA, integración y e2e
-estuvieran en verde y que QA respondiera. En los dos merges que completaron
-este archivo (`a57273d` y `af5b979`) quise rechazar y quedó aprobado por
-error, así que PROD recibió cambios que sólo tocaban documentación. Lo corregí
-con un rollback («Re-run» de `deploy-qa` en la corrida de `v7.0.0`) y rechacé
-el deploy del merge siguiente, que corrige este párrafo, con este motivo:
-«sólo cambia decisiones.md; PROD ya corre v7.0.0 (7e74c53) verificado y
-redesplegarlo no aporta nada». Esa corrida queda en Actions sin llegar a PROD.
+Antes de aprobar producción reviso que los builds, el smoke test, la integración y las e2e estén en verde y que el SHA sea el del commit que quiero desplegar, y además revisaría con cuidado los cambios en la base de datos, porque una migración incorrecta puede afectar producción aunque los tests pasen
 
-El tag `v6.0.0` apuntaba al principio a un commit que nunca llegó a PROD. Lo
-moví a `471e6b4`, la primera llegada a PROD, antes de entregar. Después de
-entregar, un tag no se mueve: deja de nombrar una versión fija.
+En los merges `a57273d` y `af5b979` quise rechazar el despliegue pero los aprobé por error, por lo que producción recibió cambios que solamente modificaban documentación
+
+Para corregirlo volví a `v7.0.0` con un rollback y después rechacé el siguiente despliegue, porque únicamente corregía `decisiones.md` y no hacía falta llevarlo a producción
+
+También moví el tag `v6.0.0` al commit `471e6b4`, que sí había llegado a producción, aunque mover un tag ya publicado no es una buena práctica porque se pierde trazabilidad, así que en adelante conviene crear una versión nueva
 
 ### Smoke test
 
-El script pide `/healthz` al frontend, hasta 30 veces cada 10 segundos. El frontend reenvía `/healthz` al backend que indica `BACKEND_URL` y
-el backend ejecuta `SELECT 1`, así que una respuesta comprueba frontend, su
-conexión con la API y la base. No demuestra que todas las operaciones funcionen, que el
-contenido sea correcto ni que un usuario pueda completar el flujo de login y
-CRUD; esas comprobaciones necesitan pruebas end-to-end. Tampoco identifica por
-sí solo la versión: esa trazabilidad viene de la etiqueta `sha-<commit>` y del deployment.
+El script `scripts/smoke-test.sh` consulta `/healthz` hasta 30 veces, esperando 10 segundos entre intentos, y como la petición pasa por el frontend y el backend hace un `SELECT 1` en MySQL, comprueba que las tres partes se comunican
 
-### Patrón y rollback
+Sin embargo no comprueba el login, la creación ni la edición de expedientes, ni dice qué versión quedó desplegada, por eso ejecuto `docker compose images` en el log del despliegue y las operaciones completas las prueban la integración y las e2e del TP7
 
-En una producción real elegiría blue-green. Esta aplicación es pequeña y el
-cambio de tráfico permitiría volver rápido a la versión anterior sin mezclar
-instancias de dos versiones. Cuesta mantener dos stacks simultáneos y no
-resuelve una migración de datos incompatible; antes de usarlo faltarían métricas
-de errores, latencia y salud por versión.
+### Rollback
 
-El rollback actual consiste en abrir en Actions la corrida de `main` del último
-deployment sano y usar «Re-run» sobre el job `deploy-qa`: GitHub vuelve a correr
-ese job y el de PROD con el SHA de esa corrida, así que se espera el smoke de QA,
-se aprueba production y se confirma su smoke. GitHub sólo deja re-ejecutar
-corridas de los últimos 30 días; para volver más atrás habría que mergear un
-revert. La imagen no se recompila: se vuelve a
-desplegar el artefacto ya verificado.
+Para una aplicación real elegiría blue-green, porque mantiene la versión anterior disponible y permite volver a ella rápido, aunque necesita más recursos y no resuelve una migración de base de datos incompatible
 
-Lo hice una vez de verdad, de `1ef3a9f` a `471e6b4`
-([corrida, intento 3](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37789365120)):
+En mi proyecto el rollback es volver a ejecutar desde GitHub Actions el job `deploy-qa` de una corrida anterior, y como no se vuelve a ejecutar `build`, se despliega la misma imagen `sha-<commit>` que ya estaba publicada
 
-| Tramo | Hora | Duración |
-|---|---|---|
-| «Re-run» de `deploy-qa` | 12:40:59 | — |
-| QA + smoke, integración y e2e | 12:41:06 → 12:43:11 | 2 min 5 s |
-| Esperando mi aprobación | 12:43:11 → 12:50:22 | 7 min 11 s |
-| Deploy de PROD + smoke | 12:50:22 → 12:50:55 | 33 s |
-| **Total** | **12:40:59 → 12:50:55** | **9 min 56 s** |
+Probé volver del commit `1ef3a9f` al `471e6b4` ([corrida](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37789365120)), y QA con sus pruebas tardó 2 minutos y 5 segundos, la aprobación esperó 7 minutos y 11 segundos y el despliegue a producción tardó 33 segundos, así que sin la espera fueron unos 2 minutos y 45 segundos
 
-Sin la espera de la aprobación, la máquina tardó 2 min 45 s; casi todo el
-tiempo fue la decisión humana.
-El rollback de código tampoco revierte datos: para eso harían falta migraciones
-compatibles hacia atrás y un procedimiento probado de restauración de backup.
+Este rollback recupera la versión de la aplicación pero no los datos de MySQL, para lo que necesitaría backups, y como GitHub sólo deja volver a ejecutar corridas de los últimos 30 días, para una versión más vieja tendría que hacer un revert
 
 ### Problemas encontrados y soluciones
 
-- Para evitar que PROD reemplazara a QA, cada deploy usa otro proyecto de
-  Compose (`expedientes-qa` / `expedientes-prod`, en `COMPOSE_PROJECT_NAME`). Compose antepone ese
-  nombre a la red y al volumen, así que cada entorno tiene su propia base.
-- El healthcheck original hacía `mysqladmin ping` contra `localhost`, que usa el
-  socket y queda verde mientras MySQL todavía se está inicializando. Lo cambié a
-  `-h 127.0.0.1`, que va por TCP como la app, y repetí el arranque con volúmenes
-  vacíos.
-- Dejé de publicar el puerto del backend: el smoke llega a la API por el
-  proxy del frontend, y así QA y PROD no chocan con el backend de desarrollo.
-- Otro proceso local ya usaba el puerto 3000. No lo detuve: asigné el 3100 al
-  frontend de QA y mantuve 3001 para PROD.
-- Evité reconstruir durante el deploy: los jobs descargan las imágenes con el
-  SHA producido por CI y Compose levanta ese tag.
-- La imagen del frontend ya leía `BACKEND_URL` al arrancar; mantuve esa
-  configuración y comprobé que no se hornee una dirección de QA o PROD.
-- Añadí reintentos al smoke porque MySQL y la aplicación pueden tardar en quedar
-  listos aun cuando el comando de despliegue ya terminó.
+- QA y producción se pisaban entre sí, entonces les asigné proyectos de Compose distintos, `expedientes-qa` y `expedientes-prod`
+- El healthcheck de MySQL con `localhost` daba listo antes de tiempo, así que lo cambié por `127.0.0.1`
+- El puerto 3000 estaba ocupado, por lo que usé 3100 para QA y 3001 para producción
+- Dejé de publicar el puerto del backend porque el frontend reenvía las peticiones a la API por la red interna
+- El despliegue podía reconstruir las imágenes, entonces hice que descargue las publicadas por CI
+- MySQL tardaba en arrancar, por eso agregué reintentos al smoke test
 
 ### Uso de inteligencia artificial
 
-Usé OpenAI Codex para adaptar el fallback de la consigna a los puertos y stack
-de esta aplicación, escribir los Compose, el smoke test, el workflow y revisar
-la separación de secrets. Verifiqué localmente la sintaxis, el aislamiento de
-los proyectos, la construcción de las imágenes y el funcionamiento de ambos
-entornos. Después usé Claude Code para simplificar los Compose, el smoke test y
-el workflow, y repetí el despliegue de prueba de QA y PROD con su smoke. La
-configuración de GitHub, las aprobaciones, el rechazo y el rollback los hice yo.
+Usé OpenAI Codex para adaptar la consigna al VPS y preparar los archivos de Compose, el workflow y el smoke test, y Claude Code para simplificar algunos archivos
 
-## TP7 — Contenedores en el pipeline + integración y e2e
+Comprobé las imágenes publicadas, el aislamiento entre QA y producción y el funcionamiento de los dos entornos, mientras que las aprobaciones, el rechazo y la prueba de rollback los hice yo
 
+## TP7 — Contenedores en el pipeline, integración y e2e
 
 ### Build once, deploy many
 
-La imagen se construye una sola vez, en el job `build`, y se publica como
-`sha-<commit>`. QA y PROD no construyen nada: `compose.deploy.yml` no tiene
-`build:`, sólo `image:` con esa etiqueta, así que hacen `pull` del mismo binario
-que pasó los tests. Si cada entorno reconstruyera, una dependencia que cambió
-entre un build y otro haría que QA y PROD corran cosas distintas con el mismo
-código, que es el problema del escenario.
+Las imágenes del backend y del frontend se construyen una sola vez en el job `build`, y después QA y producción las descargan con `compose.deploy.yml`, que usa `image:` en lugar de `build:`
 
-### Etiquetas y release
+Así cada entorno no reconstruye la aplicación ni puede terminar con dependencias diferentes, por lo que producción usa el mismo artefacto que se probó en QA, aunque para asegurar que es exactamente la misma imagen la referencia más precisa es el digest, porque una etiqueta se puede mover
 
-- `sha-<commit>` identifica la imagen de un commit; es la que se promueve.
-- `v7.0.0` es un tag de git sobre el commit que está en PROD (el que muestra
-  *Deployments*, no el último de `main`). Del tag a la imagen hay un paso:
-  `git rev-list -n1 v7.0.0` da el commit, y la imagen es `…:sha-<ese commit>`.
-- El pipeline no publica `latest`: es una etiqueta que se mueve sola, así que no
-  dice qué versión corre y un rollback con ella no es reproducible.
-- Una etiqueta se puede mover a mano con un `docker push`; lo único inmutable es
-  el digest. Por eso sólo publica el pipeline, con el `GITHUB_TOKEN` de la
-  corrida, y en el YAML no hay ningún token mío.
+### Etiquetas y versiones
 
-### Cómo se comprueba qué imagen corre
+Cada imagen tiene la etiqueta `sha-<commit>`, que la relaciona con el commit desde el que se construyó, y el tag de git `v7.0.0` marca la versión que estaba en producción, así que con `git rev-list -n1 v7.0.0` obtengo ese commit y busco su imagen
 
-Los jobs de deploy ejecutan `docker compose images` después del `up`: el log de
-`deploy-qa` y el de `deploy-production` muestran la misma etiqueta
-`sha-<commit>`. En el VPS, el mismo comando lo dice en vivo. El smoke no
-alcanza: sólo prueba que el entorno responde, no qué versión es ni que la app
-funcione.
+No uso `latest` porque esa etiqueta cambia y no permite saber qué versión está corriendo, y después de cada despliegue ejecuto `docker compose images` para dejar registrado qué imágenes usa el entorno
 
-### Qué prueba cada suite
+### Pruebas de integración
 
-- **Integración** (`frontend/e2e/api.spec.js`, sin navegador): alta, búsqueda y
-  baja; alta sin número → 400 sin guardar nada; y un número repetido en el mismo
-  año → 409. Elegí la tercera porque esa regla la aplica la base (clave única),
-  no el código Python: un unitario con un doble del repositorio nunca la vería.
-- **e2e** (`frontend/e2e/flujos.spec.js`, con Chromium): crear un expediente,
-  verlo y borrarlo; un año inválido muestra el error y no se guarda; y buscar
-  un expediente por su número, que es lo que hacen todos los días los que
-  usan la app y que pasa por la base.
-- Cada prueba crea datos con un número que incluye la hora, así no choca con
-  otra corrida, y los borra comprobando que ya no están.
-- Qué dejé afuera: los bordes de cada campo quedan en los unitarios, que son
-  rápidos y baratos; filtros por columna, exportar CSV y editar no tienen e2e
-  porque cada e2e es lenta y frágil, y elegí sólo los flujos críticos (pirámide).
+Las pruebas están en `frontend/e2e/api.spec.js` y le hacen peticiones a la API de QA, con su backend y su MySQL reales, sin abrir un navegador
 
-### El par verde/rojo
+Comprueban que se pueda crear, buscar y borrar un expediente, que uno sin número devuelva 400 y que repetir el número y el año devuelva 409
 
-En el [commit que rompió la app](https://github.com/franco2355/ingsoft3-tp01/commit/1415f4c7c83fb6ede30518b91fe836abcbda5a26)
-cambié el texto del botón «Guardar» por «Grabar», sin tocar `e2e/`. Ningún
-unitario mira ese botón, así que el build pasó. En
-[la corrida](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37804468902) el smoke quedó verde, la
-integración verde (3 de 3: la API y la base estaban sanas) y la e2e roja: los
-dos flujos que guardan no encontraron el botón y vencieron a los 30 s, con
-captura y traza en el reporte; la búsqueda, que no lo usa, pasó.
-`deploy-production` no arrancó. Ese par dice quién se rompió sin abrir el
-código: el front. Si se rompe la API, la integración queda roja y la e2e ni
-corre, por su `needs`. Lo arreglé volviendo a «Guardar» y
-[la cadena completa quedó verde](https://github.com/franco2355/ingsoft3-tp01/actions/runs/37805257316) hasta PROD.
+Elegí el 409 porque depende de la restricción de unicidad de MySQL, y eso no se puede verificar cuando la base está simulada con un `Mock`
 
-### Integración amplia
+Las ejecuto contra QA ya desplegado porque así pruebo las mismas imágenes y la misma configuración que después van a producción, aunque dependen de que QA esté disponible y comparten su base, por lo que cada prueba borra lo que crea
 
-Le hablo a la API de QA ya desplegada, con su MySQL de verdad, en vez de
-levantar una base en el job. Gana que prueba la misma imagen, configuración y
-base que después va a PROD. Pierde que necesita QA en pie, es más lenta y
-comparte la base con otras corridas. `QA_URL` apunta al frontend de QA, que
-reenvía `/api/*` sin tocarlo al backend del mismo entorno.
+### Pruebas e2e
 
-### Timeouts y tests flaky
+Las pruebas están en `frontend/e2e/flujos.spec.js` y usan Playwright con Chromium para recorrer la aplicación como un usuario: crear un expediente, verlo y borrarlo, comprobar que un año incorrecto muestre el error y buscar un expediente por número, porque son las operaciones del uso diario
 
-En el VPS no hay cold start. Playwright espera cada elemento hasta su timeout
-(30 s por test), así que no hay `sleep`. Un test flaky pasa y falla con el mismo
-código; es peor que no tenerlo porque enseña a ignorar el rojo. Por eso no
-configuré reintentos: un fallo se ve como fallo.
+Los expedientes de prueba llevan la hora en el número para no repetirse entre corridas y se eliminan al terminar
 
-### La misma imagen del front en QA y PROD
+No incluí todos los filtros, la exportación CSV ni la edición porque las e2e son más lentas y necesitan más mantenimiento, y parte de esa lógica ya la comprueban los tests unitarios, aunque la edición completa podría agregarse más adelante
 
-La imagen del front no sabe dónde está la API: `BACKEND_URL` llega por
-variable al arrancar el contenedor. En cada proyecto de Compose vale
-`http://backend:8000`, que resuelve al backend de su propia red.
+Como el VPS está siempre prendido no hay cold start, y Playwright espera a que aparezcan los elementos con un límite de 30 segundos por prueba, pero no le puse reintentos automáticos porque prefiero ver las pruebas inestables en vez de ocultar sus fallos
 
-### Límite conocido: dos merges seguidos
+### Verde y rojo
 
-QA es uno solo. Si la corrida B despliega QA mientras la integración o la e2e
-de la corrida A siguen corriendo, A prueba en parte la imagen de B. Se reconoce
-comparando la hora del `deploy-qa` de B con la de las suites de A en *Actions*.
-En ese caso rechazo la aprobación de A con ese motivo y vale la de B. La regla
-es mergear de a uno mientras la cadena corre.
+Para comprobar que las e2e podían bloquear producción cambié el texto del botón `Guardar` por `Grabar`, sin modificar los tests ([commit](https://github.com/franco2355/ingsoft3-tp01/commit/1415f4c7c83fb6ede30518b91fe836abcbda5a26))
+
+El build, el smoke test y la integración quedaron en verde porque el backend y la base seguían funcionando, pero las dos e2e que usan el botón `Guardar` no lo encontraron y quedaron en rojo, por lo que el pipeline no desplegó esa versión en producción
+
+Las capturas y trazas de Playwright mostraron el problema, y tener la integración verde con las e2e rojas me indicó que la API funcionaba y lo roto era la interfaz
+
+Después volví a poner `Guardar` y el pipeline quedó en verde hasta producción
+
+### Misma imagen en QA y producción
+
+La imagen del frontend no tiene una dirección fija de la API, sino que recibe `BACKEND_URL` al iniciar el contenedor, y aunque en los dos entornos vale `http://backend:8000`, cada uno tiene su propia red y su frontend llega a su propio backend, así que uso la misma imagen sin reconstruirla
+
+### Dos merges seguidos
+
+Tengo un solo QA, por lo que si hago dos merges seguidos la segunda corrida puede actualizar QA mientras la primera todavía ejecuta sus pruebas
+
+Para evitarlo hago los merges de a uno, y si hay dos corridas superpuestas reviso los horarios de despliegue y rechazo la más vieja, aunque este control es manual y como mejora debería configurar `concurrency` en GitHub Actions para que dos corridas no usen QA al mismo tiempo
 
 ### Problemas encontrados y soluciones
 
-- Vitest tomaba los archivos de `e2e/` como tests unitarios: limité su
-  `include` a `tests/`.
-- La imagen oficial de Playwright 1.64.0 todavía no estaba publicada: fijé la
-  versión 1.63.0, igual en `package.json` y en `scripts/playwright.sh`.
-- En un runner propio, los archivos que crea un contenedor como root traban el
-  `checkout` de la corrida siguiente: Playwright corre con mi usuario
-  (`--user`).
-- `npm audit` marcó una vulnerabilidad en `source-map-js`, que trae Vitest; la
-  resolví con `npm audit fix`.
+- Vitest ejecutaba los archivos e2e como unitarios, así que limité su búsqueda a `tests/`
+- La imagen de Playwright 1.64.0 todavía no estaba publicada, por eso usé la 1.63.0
+- Los contenedores dejaban archivos de root y el siguiente checkout fallaba, entonces ejecuto Playwright con mi usuario mediante `--user`
+- `npm audit` encontró una vulnerabilidad en `source-map-js`, que corregí con `npm audit fix`
 
 ### Uso de inteligencia artificial
 
-Usé Claude Code para escribir las dos suites, el script de Playwright y los
-jobs nuevos del workflow. Lo verifiqué levantando un QA de prueba con las
-imágenes `sha-…`: las dos suites pasaron 3 de 3, y al romper el botón
-«Guardar» la integración siguió verde y la e2e se puso roja con captura y
-traza. Puedo explicar qué verifica cada prueba, contra qué entorno corre y qué
-pasa si falla.
+Usé Claude Code para preparar las pruebas de integración y e2e, el script de Playwright y los nuevos jobs del pipeline
+
+Lo comprobé levantando un QA de prueba con las imágenes del registry, después rompí el botón para provocar una e2e roja con la integración en verde, y finalmente lo corregí para dejar el pipeline funcionando
+
+## TP8 — Infraestructura como código
+
+### Herramienta elegida
+
+Elegí Terraform con el provider de Docker para crear un entorno preprod en mi VPS, y no usé Neon ni Render porque QA y producción ya funcionan con Docker en ese servidor y mi aplicación usa MySQL, mientras que Neon es PostgreSQL
+
+Trabajé con Terraform 1.17.0 y fijé el provider `kreuzwerker/docker` en la versión 4.6.0, y además subí `.terraform.lock.hcl`, que guarda la versión y los hashes del provider, mientras que la versión del programa Terraform la limita `required_version` en `main.tf`
+
+### Preprod
+
+Preprod tiene su propia red, volumen, MySQL, backend y frontend, por lo que se puede levantar y eliminar sin tocar los contenedores de QA y producción
+
+Usa las imágenes `sha-7e74c53` del TP7, así que Terraform descarga imágenes ya construidas en lugar de generar otras, y el frontend usa el puerto 3200 y escucha solamente en `127.0.0.1`, igual que los otros entornos
+
+Los contenedores se comunican por sus nombres dentro de la red de Docker, sin direcciones IP fijas, y las contraseñas no están en los archivos del proyecto porque Terraform las recibe desde un archivo de variables que dejé fuera del repositorio
+
+### Estado de Terraform
+
+El estado de Terraform queda guardado en el VPS, dentro de `~/.local/state/`, con permisos 600 para que sólo lo lea mi usuario, y no lo subí al repositorio porque contiene las contraseñas y otros datos sensibles
+
+Es importante porque Terraform lo usa para relacionar lo que está en el código con lo que existe en Docker, así que si lo pierdo los contenedores siguen funcionando pero Terraform deja de saber que son suyos, y tendría que recuperar el estado o importarlos
+
+### Comprobaciones
+
+Primero ejecuté `terraform apply` para crear preprod y después `terraform plan` dio `No changes`, lo que indica que no había diferencias entre la configuración y lo creado
+
+Luego ejecuté `terraform destroy` y volví a ejecutar `terraform apply`, y comprobé que preprod se volvía a crear igual mientras QA y producción seguían funcionando, aunque los datos de MySQL que se borran con el destroy no vuelven, porque para eso tendría que conservar el volumen o restaurar un backup
+
+### Problemas encontrados y soluciones
+
+- El backend intentaba conectarse cuando MySQL todavía no estaba listo, entonces agregué un healthcheck y que el backend espere a la base
+- Terraform podía borrar imágenes que también usan los otros entornos, así que puse `keep_locally = true` en los recursos de imagen, que hace que el destroy no borre la imagen del servidor
+- Los puertos de QA y producción ya estaban ocupados, por eso le asigné el 3200 a preprod
+
+### Uso de inteligencia artificial
+
+Usé OpenAI Codex para entender cómo usar Terraform con Docker, preparar los archivos y revisar los errores que aparecieron en el VPS, mientras que los comandos `apply`, `plan` y `destroy` los ejecuté yo para comprobar que preprod se creara, se eliminara y volviera a levantarse sin afectar QA ni producción
+
+## TP9 — DevSecOps y observabilidad
+
+### Dependabot
+
+Activé Dependabot, que revisa si las librerías que usa el proyecto tienen versiones nuevas o vulnerabilidades y abre PRs para actualizarlas, para las dependencias de Python, npm y GitHub Actions, junto con las alertas y las actualizaciones de seguridad
+
+Mergeé el PR #32, que actualizaba pytest de la versión 8.4.2 a la 9.0.3 e incluía una corrección de seguridad en el uso de directorios temporales, y me animé porque pytest sólo se usa para correr los tests y no llega a producción, y porque el pipeline del PR quedó en verde con los tests y los mínimos de cobertura
+
+### CodeQL y push protection
+
+Activé CodeQL con la configuración por defecto, que analiza el código buscando errores de seguridad sin ejecutarlo, y el análisis encontró un posible SSRF (Server-Side Request Forgery, cuando un usuario logra que el servidor mande peticiones a una dirección elegida por él) en las peticiones que el frontend reenviaba al backend, así que lo corregí usando `BACKEND_URL` como destino fijo del proxy para que el usuario no pueda elegir a qué servidor se envía la petición
+
+También comprobé que push protection estuviera activo, que bloquea las credenciales que GitHub reconoce antes de que lleguen al repositorio, aunque no detecta todos los tipos de secretos, por eso las contraseñas siguen fuera del código
+
+### Monitor
+
+Como producción no está expuesta públicamente, usé Healthchecks.io, un servicio que espera recibir una señal cada cierto tiempo y avisa por correo si deja de llegar, junto con un cron en el VPS, que es una tarea programada que cada minuto consulta `/healthz` y, si responde, le envía una señal a Healthchecks.io
+
+Si las señales dejan de llegar durante el tiempo permitido, Healthchecks.io manda un correo de caída, y cuando vuelven manda otro de recuperación, así que compruebo la disponibilidad sin abrir ningún puerto público
+
+Para probarlo detuve el frontend de producción a las 13:58:45 y la alerta DOWN llegó a las 14:01:02, es decir 2 minutos y 17 segundos después, y cuando lo volví a levantar la alerta UP llegó a las 14:03:02
+
+Al terminar comenté la línea del cron y pausé el monitor, por lo que quedó probado pero no está avisando mientras siga pausado
+
+### Sentry
+
+Agregué Sentry al backend y al frontend para registrar errores y ver el rendimiento de la aplicación, y como los DSN, que son las direcciones a donde la aplicación manda esos datos, están sólo en el environment `production`, QA no envía datos
+
+Durante el período observado la operación más usada fue el login, con unas 0,3 peticiones por minuto, y la más lenta fue editar un expediente, con 33 ms contra 11 ms del listado
+
+Aunque los dos tiempos son bajos, la edición fue la más lenta, por eso abrí la tarjeta [#45](https://github.com/franco2355/ingsoft3-tp01/issues/45) en mi tablero para revisar qué parte genera esa diferencia, aunque estos datos son de poco tiempo y no alcanzan para asegurar que haya un problema de rendimiento
+
+### Problemas encontrados y soluciones
+
+- El bloqueador de anuncios impedía que el frontend enviara datos a Sentry, entonces generé el error desde una ventana de incógnito
+- Las credenciales de producción no coincidían con las de QA, así que corregí los secrets de los environments y volví a desplegar
+- Publicar `/healthz` por el puerto 80 podía afectar a otras aplicaciones del VPS, por eso usé un cron local sin abrir puertos nuevos
+
+### Uso de inteligencia artificial
+
+Usé OpenAI Codex para configurar Dependabot, CodeQL y Sentry y revisar las alertas encontradas, y Claude Code para simplificar el monitor y ayudarme con Healthchecks.io y Sentry
+
+Hice yo la prueba de caída de producción, revisé las alertas recibidas y abrí la tarjeta de seguimiento
