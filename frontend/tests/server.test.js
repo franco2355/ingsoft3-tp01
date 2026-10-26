@@ -13,6 +13,7 @@ let frontend;
 beforeAll(async () => {
   // Backend falso: contesta a qué host y a qué ruta le llegó la petición.
   backend = createServer((pedido, respuesta) => {
+    respuesta.setHeader("Content-Type", "application/json");
     respuesta.end(JSON.stringify({ host: pedido.headers.host, ruta: pedido.url }));
   }).listen(PUERTO_BACKEND, "127.0.0.1");
   await once(backend, "listening");
