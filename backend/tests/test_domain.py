@@ -6,6 +6,7 @@ from app.domain import antiguedad, validar_expediente
 
 
 def expediente_con(campo, valor):
+    # Cambia un dato de un expediente válido.
     expediente = {"numero": "123-A", "anio": 2020, "protagonista": "Ana"}
     expediente[campo] = valor
     return expediente
@@ -16,6 +17,7 @@ def test_acepta_un_expediente_valido():
     assert errores == {}
 
 
+# Repite el test con cada valor.
 @pytest.mark.parametrize("numero", ["", "X" * 31])
 def test_rechaza_un_numero_invalido(numero):
     _, errores = validar_expediente(expediente_con("numero", numero))
@@ -38,6 +40,7 @@ def test_rechaza_un_acta_demasiado_larga():
     assert "acta" in errores
 
 
+# Prueba los límites entre las categorías.
 @pytest.mark.parametrize(("anios", "esperado"), [(0, "reciente"), (1, "reciente"), (5, "en curso"), (6, "archivo")])
 def test_clasifica_la_antiguedad(anios, esperado):
     anio = date.today().year - anios
