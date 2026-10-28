@@ -61,3 +61,13 @@ def antiguedad(anio):
     if anios <= 5:
         return "en curso"
     return "archivo"
+
+
+def plazo_en_dias(prioridad):
+    """Días para resolver un expediente según su prioridad."""
+    prioridad = prioridad.strip().lower()
+    if prioridad == "urgente":
+        return 3
+    if prioridad == "normal":
+        return 15
+    return 30
