@@ -18,7 +18,7 @@
 - Paquete frontend: <https://github.com/users/franco2355/packages/container/package/ingsoft3-tp01-frontend>
 - QA y PROD corren en mi VPS (209.126.4.187) y sólo escuchan en su `127.0.0.1`.
   Se abren con un túnel SSH:
-  `ssh -L 3100:localhost:3100 -L 3001:localhost:3001 lopez@209.126.4.187`
+  `ssh -L 3100:localhost:3100 -L 3001:localhost:3001`
   - QA: <http://localhost:3100>
   - PROD: <http://localhost:3001>
 - Corrida de PR con «Entrar al registry» salteado: <https://github.com/franco2355/ingsoft3-tp01/actions/runs/37800252791/job/113390216010>
